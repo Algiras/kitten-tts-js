@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KittenTTS JS — Browser Example</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    textarea { width: 100%; height: 80px; font-family: inherit; font-size: 14px; padding: 8px; }
+    select, button { padding: 6px 12px; font-family: inherit; font-size: 14px; }
+    #status { margin-top: 8px; font-size: 13px; color: #555; }
+    audio { display: block; margin-top: 16px; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>🐱 KittenTTS JS — Browser Demo</h2>
+  <textarea id="text">Hello from KittenTTS running in the browser!</textarea>
+  <br><br>
+  <label>Voice:
+    <select id="voice">
+      <option value="Bella">Bella (female)</option>
+      <option value="Luna">Luna (female)</option>
+      <option value="Leo" selected>Leo (male)</option>
+      <option value="Jasper">Jasper (male)</option>
+    </select>
+  </label>
+  &nbsp;
+  <button id="btn">Speak</button>
+  <div id="status">Loading model…</div>
+  <audio id="player" controls></audio>
+
+  <script type="module">
+    import { KittenTTS } from '../src/index.js';
+
+    let tts;
+    const statusEl = document.getElementById('status');
+    const btn = document.getElementById('btn');
+
+    async function init() {
+      btn.disabled = true;
+      try {
+        tts = await KittenTTS.from_pretrained('KittenML/kitten-tts-nano-0.8');
+        statusEl.textContent = 'Model loaded. Click Speak!';
+        btn.disabled = false;
+      } catch (e) {
+        statusEl.textContent = 'Error loading model: ' + e.message;
+        console.error(e);
+      }
+    }
+
+    btn.addEventListener('click', async () => {
+      const text = document.getElementById('text').value.trim();
+      const voice = document.getElementById('voice').value;
+      if (!text || !tts) return;
+      btn.disabled = true;
+      statusEl.textContent = 'Synthesizing…';
+      try {
+        const audio = await tts.generate(text, { voice });
+        const blob = audio.toBlob();
+        document.getElementById('player').src = URL.createObjectURL(blob);
+        statusEl.textContent = `Done! ${audio.duration.toFixed(1)}s`;
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

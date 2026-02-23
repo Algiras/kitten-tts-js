@@ -1,0 +1,6 @@
+node_modules/
+*.wav
+*.onnx
+*.npz
+.cache/
+dist/

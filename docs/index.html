@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KittenTTS JS — Live Demo</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2e3147;
+      --accent: #7c6af7;
+      --accent-hover: #9485ff;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --success: #34d399;
+      --error: #f87171;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      width: 100%;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo { font-size: 1.5rem; }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    header .badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      background: var(--accent);
+      border-radius: 99px;
+      font-weight: 600;
+      margin-left: 0.25rem;
+      vertical-align: middle;
+    }
+
+    header .links {
+      margin-left: auto;
+      display: flex;
+      gap: 1rem;
+    }
+
+    header a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.15s;
+    }
+
+    header a:hover { color: var(--text); }
+
+    main {
+      width: 100%;
+      max-width: 680px;
+      padding: 3rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .hero {
+      text-align: center;
+    }
+
+    .hero h2 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #e2e8f0 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.75rem;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+      min-height: 100px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+
+    .row { display: flex; gap: 1rem; }
+    .row > div { flex: 1; }
+
+    select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.6rem 0.9rem;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.25rem;
+    }
+
+    select:focus { border-color: var(--accent); }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .speed-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .speed-row input { flex: 1; }
+
+    .speed-val {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent);
+      min-width: 2.5rem;
+      text-align: right;
+    }
+
+    button.generate {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.01em;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button.generate:hover { background: var(--accent-hover); }
+    button.generate:active { transform: scale(0.99); }
+    button.generate:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #status {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      min-height: 1.2em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    #status.error { color: var(--error); }
+    #status.success { color: var(--success); }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--text-muted);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .player-card {
+      display: none;
+    }
+
+    .player-card.visible { display: flex; }
+
+    audio {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .download-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .download-btn {
+      flex: 1;
+      padding: 0.6rem 1rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      text-align: center;
+    }
+
+    .download-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+    }
+
+    .info-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      text-align: center;
+    }
+
+    .info-item .val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .info-item .lbl {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.1rem;
+    }
+
+    .features {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .chip {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      color: var(--text-muted);
+    }
+
+    footer {
+      margin-top: auto;
+      padding: 2rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🐱</span>
+  <h1>KittenTTS JS <span class="badge">v0.1</span></h1>
+  <nav class="links">
+    <a href="https://github.com/KittenML/kitten-tts-js" target="_blank">GitHub</a>
+    <a href="https://www.npmjs.com/package/kitten-tts-js" target="_blank">npm</a>
+    <a href="https://huggingface.co/KittenML" target="_blank">Models</a>
+  </nav>
+</header>
+
+<main>
+  <div class="hero">
+    <h2>Text to Speech<br>in your browser</h2>
+    <p>KittenTTS JS — ultra-lightweight neural TTS powered by ONNX.<br>
+      No Python, no server. Runs entirely in WebAssembly.</p>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-item"><div class="val">25 MB</div><div class="lbl">nano model</div></div>
+    <div class="info-item"><div class="val">24 kHz</div><div class="lbl">sample rate</div></div>
+    <div class="info-item"><div class="val">8</div><div class="lbl">voices</div></div>
+  </div>
+
+  <div class="features">
+    <span class="chip">ONNX Runtime Web</span>
+    <span class="chip">eSpeak-NG WASM</span>
+    <span class="chip">No server needed</span>
+    <span class="chip">StyleTTS2-based</span>
+    <span class="chip">ESM + TypeScript</span>
+  </div>
+
+  <div class="card">
+    <div>
+      <label for="text-input">Text to synthesize</label>
+      <textarea id="text-input" placeholder="Type something to speak aloud…">Hello! I'm KittenTTS, a lightweight text-to-speech engine running entirely in your browser using WebAssembly. No server required.</textarea>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="voice-select">Voice</label>
+        <select id="voice-select">
+          <option value="Bella">Bella (female)</option>
+          <option value="Luna">Luna (female)</option>
+          <option value="Rosie">Rosie (female)</option>
+          <option value="Kiki">Kiki (female)</option>
+          <option value="Leo" selected>Leo (male)</option>
+          <option value="Jasper">Jasper (male)</option>
+          <option value="Bruno">Bruno (male)</option>
+          <option value="Hugo">Hugo (male)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="model-select">Model</label>
+        <select id="model-select">
+          <option value="KittenML/kitten-tts-nano-0.8" selected>Nano (25 MB) — fastest</option>
+          <option value="KittenML/kitten-tts-micro-0.8">Micro (40 MB)</option>
+          <option value="KittenML/kitten-tts-mini-0.8">Mini (80 MB) — best quality</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label>Speed</label>
+      <div class="speed-row">
+        <input type="range" id="speed-range" min="0.5" max="2.0" step="0.05" value="1.0" />
+        <span class="speed-val" id="speed-val">1.0×</span>
+      </div>
+    </div>
+
+    <button class="generate" id="generate-btn">Generate Speech</button>
+
+    <div id="status"></div>
+  </div>
+
+  <div class="card player-card" id="player-card">
+    <label>Output Audio</label>
+    <audio id="audio-player" controls></audio>
+    <div class="download-row">
+      <button class="download-btn" id="download-btn">Download WAV</button>
+      <button class="download-btn" id="copy-url-btn">Copy Audio URL</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Built with <a href="https://github.com/KittenML/kitten-tts-js">kitten-tts-js</a> ·
+  Models by <a href="https://huggingface.co/KittenML" target="_blank">KittenML on HuggingFace</a>
+</footer>
+
+<script type="module">
+  // ──────────────────────────────────────────────────────────────────────────
+  // Imports via CDN — uses the pre-built UMD/ESM bundles
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // NOTE: Replace these with actual CDN URLs once kitten-tts-js is published.
+  // For now this page shows the UI and wires up the logic;
+  // the CDN import will resolve once the package is on npm/jsDelivr.
+  // Fallback: uses a mock that explains the status.
+
+  let KittenTTS = null;
+  let tts = null;
+  let lastBlob = null;
+
+  const statusEl = document.getElementById('status');
+  const generateBtn = document.getElementById('generate-btn');
+  const playerCard = document.getElementById('player-card');
+  const audioPlayer = document.getElementById('audio-player');
+  const downloadBtn = document.getElementById('download-btn');
+  const copyUrlBtn = document.getElementById('copy-url-btn');
+  const speedRange = document.getElementById('speed-range');
+  const speedVal = document.getElementById('speed-val');
+
+  speedRange.addEventListener('input', () => {
+    speedVal.textContent = parseFloat(speedRange.value).toFixed(2) + '×';
+  });
+
+  function setStatus(msg, type = '') {
+    statusEl.className = type;
+    statusEl.innerHTML = type === 'loading'
+      ? `<span class="spinner"></span> ${msg}`
+      : msg;
+  }
+
+  async function loadModel(modelId) {
+    setStatus('Loading model (first load downloads ~25 MB, cached after)…', 'loading');
+    generateBtn.disabled = true;
+
+    try {
+      // Try loading from CDN (esm.sh) — works once package is published
+      const mod = await import(`https://esm.sh/kitten-tts-js`).catch(() => null);
+      if (mod && mod.KittenTTS) {
+        KittenTTS = mod.KittenTTS;
+      } else {
+        // Fallback: load from local build (for dev / self-hosted Pages)
+        const local = await import('../src/index.js').catch(() => null);
+        if (local && local.KittenTTS) {
+          KittenTTS = local.KittenTTS;
+        } else {
+          throw new Error('Could not load kitten-tts-js. Please check the console.');
+        }
+      }
+
+      tts = await KittenTTS.from_pretrained(modelId);
+      setStatus('Model loaded. Ready to generate!', 'success');
+    } catch (err) {
+      setStatus('Failed to load model: ' + err.message, 'error');
+      console.error(err);
+    } finally {
+      generateBtn.disabled = false;
+    }
+  }
+
+  async function generate() {
+    const text = document.getElementById('text-input').value.trim();
+    if (!text) { setStatus('Please enter some text.', 'error'); return; }
+
+    const voice = document.getElementById('voice-select').value;
+    const speed = parseFloat(speedRange.value);
+    const modelId = document.getElementById('model-select').value;
+
+    generateBtn.disabled = true;
+
+    // Load or reload model if needed
+    if (!tts) {
+      await loadModel(modelId);
+      if (!tts) return;
+    }
+
+    setStatus('Synthesizing…', 'loading');
+
+    try {
+      const audio = await tts.generate(text, { voice, speed });
+      const blob = audio.toBlob();
+      lastBlob = blob;
+
+      const url = URL.createObjectURL(blob);
+      audioPlayer.src = url;
+      playerCard.classList.add('visible');
+
+      const dur = audio.duration.toFixed(1);
+      setStatus(`Done! ${dur}s of audio · ${voice} · ${speed.toFixed(2)}× speed`, 'success');
+
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kitten-tts-${voice.toLowerCase()}.wav`;
+        a.click();
+      };
+
+      copyUrlBtn.onclick = async () => {
+        await navigator.clipboard.writeText(url);
+        copyUrlBtn.textContent = 'Copied!';
+        setTimeout(() => { copyUrlBtn.textContent = 'Copy Audio URL'; }, 2000);
+      };
+    } catch (err) {
+      setStatus('Error: ' + err.message, 'error');
+      console.error(err);
+    } finally {
+      generateBtn.disabled = false;
+    }
+  }
+
+  generateBtn.addEventListener('click', generate);
+
+  // Reload model when model selector changes
+  document.getElementById('model-select').addEventListener('change', () => {
+    tts = null;
+  });
+
+  // Auto-load model on page load (warm up WASM)
+  const initialModel = document.getElementById('model-select').value;
+  loadModel(initialModel);
+</script>
+</body>
+</html>
