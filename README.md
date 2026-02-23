@@ -4,12 +4,16 @@
 
 **[Live Demo →](https://algiras.github.io/kitten-tts-js)**
 
-> **Based on [KittenTTS](https://github.com/KittenML/KittenTTS) by [KittenML / Stellon Labs](https://github.com/KittenML)** — all credit for the original models, architecture, and voice embeddings goes to them.
+> **Based on [KittenTTS](https://github.com/KittenML/KittenTTS) by [KittenML / Stellon Labs](https://github.com/KittenML)**
+> — original Python library: [github.com/KittenML/KittenTTS](https://github.com/KittenML/KittenTTS)
+> — original models & voices: [huggingface.co/KittenML](https://huggingface.co/KittenML)
+>
+> All credit for the models, architecture, and voice embeddings goes to them.
 > Licensed under [Apache 2.0](./LICENSE). See [NOTICE](./NOTICE) for full attribution.
 
-> **Disclaimer:** This is an unofficial, community port made by a hobbyist who needed KittenTTS in JavaScript.
-> It is not affiliated with, endorsed by, or supported by KittenML or Stellon Labs.
-> For the official Python library and model updates, visit [github.com/KittenML/KittenTTS](https://github.com/KittenML/KittenTTS).
+> ⚠️ **Disclaimer:** This is an **unofficial** community port made by a hobbyist who needed KittenTTS in JavaScript.
+> It is **not** affiliated with, endorsed by, or supported by KittenML or Stellon Labs.
+> For the official Python library and model updates please visit the links above.
 
 ---
 
