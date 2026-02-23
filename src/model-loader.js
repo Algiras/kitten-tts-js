@@ -5,8 +5,6 @@
  * Browser: caches in IndexedDB (via Cache API)
  */
 
-import { fileFromPath } from '@huggingface/hub';
-
 const HF_BASE = 'https://huggingface.co';
 const CACHE_DIR_NAME = 'kitten-tts';
 
