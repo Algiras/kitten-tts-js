@@ -1,23 +1,31 @@
 /**
  * Phonemizer: converts text to IPA phonemes via eSpeak-NG (WASM).
  *
- * Uses @echogarden/espeak-ng-emscripten for both Node.js and browser —
- * a single WASM backend that works everywhere.
- *
+ * Uses @echogarden/espeak-ng-emscripten for both Node.js and browser.
  * The WASM instance is lazy-initialized on first call and cached.
+ *
+ * API (from echogarden source):
+ *   const m = await EspeakInitializer();
+ *   const instance = new m.eSpeakNGWorker();
+ *   const result = instance.synthesize_ipa(text);  // → { ipa: string }
  */
 
-let espeakModule = null;
+let espeakInstance = null;
 
 /**
- * Lazy-initialize the eSpeak-NG WASM module.
+ * Lazy-initialize the eSpeak-NG WASM worker instance.
  */
-async function getEspeak() {
-  if (espeakModule) return espeakModule;
+async function getEspeakInstance() {
+  if (espeakInstance) return espeakInstance;
 
-  const { default: initEspeak } = await import('@echogarden/espeak-ng-emscripten');
-  espeakModule = await initEspeak();
-  return espeakModule;
+  const { default: EspeakInitializer } = await import('@echogarden/espeak-ng-emscripten');
+  const m = await EspeakInitializer();
+  espeakInstance = new m.eSpeakNGWorker();
+  // Default to en-us
+  if (typeof espeakInstance.set_voice === 'function') {
+    espeakInstance.set_voice('en-us');
+  }
+  return espeakInstance;
 }
 
 /**
@@ -33,33 +41,16 @@ export function basicEnglishTokenize(text) {
 }
 
 /**
- * Phonemize text using eSpeak-NG en-us.
+ * Phonemize text using eSpeak-NG en-us, returning a tokenized IPA string.
  *
  * @param {string} text  — preprocessed plain text
  * @returns {Promise<string>} — IPA phoneme string, tokenized
  */
 export async function phonemize(text) {
-  const espeak = await getEspeak();
+  const instance = await getEspeakInstance();
 
-  // synthesizeSpeech returns { phonemes, ... } (or use phonemizeText if available)
-  let phonemes;
-  if (typeof espeak.phonemizeText === 'function') {
-    phonemes = await espeak.phonemizeText(text, {
-      language: 'en-us',
-      useStress: true,
-      preservePunctuation: true,
-    });
-  } else if (typeof espeak.synthesizeSpeech === 'function') {
-    const result = await espeak.synthesizeSpeech(text, {
-      language: 'en-us',
-      outputType: 'phonemes',
-      useStress: true,
-      preservePunctuation: true,
-    });
-    phonemes = result.phonemes || result.transcript || '';
-  } else {
-    throw new Error('eSpeak-NG module does not expose phonemize/synthesize API');
-  }
+  const result = instance.synthesize_ipa(text);
+  const ipa = (result && result.ipa) ? result.ipa : String(result || '');
 
-  return basicEnglishTokenize(phonemes);
+  return basicEnglishTokenize(ipa);
 }
