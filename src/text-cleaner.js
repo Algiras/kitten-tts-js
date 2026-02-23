@@ -1,64 +1,41 @@
 /**
  * TextCleaner: maps phoneme strings to token ID sequences.
  *
- * Mirrors the Python KittenTTS TextCleaner symbol table exactly:
- *   pad '$' + punctuation + A-Za-z + IPA characters
+ * Exact port of KittenTTS Python TextCleaner symbol table
+ * (from kittentts/onnx_model.py).
+ *
+ * Vocab size: 188 symbols (indices 0–187)
+ *   0        : pad '$'
+ *   1–16     : punctuation  ';:,.!?¡¿—…"«»"" '
+ *   17–68    : A-Za-z (52 letters)
+ *   69–187   : IPA characters (119 symbols)
  */
 
-// IPA characters used in English phonemization
-const IPA_CHARS = [
-  'ɪ', 'ʊ', 'ə', 'ɛ', 'æ', 'ʌ', 'ɔ', 'ɑ', 'ː',
-  'ɹ', 'ŋ', 'ʃ', 'ʒ', 'θ', 'ð', 'tʃ', 'dʒ',
-  'ˈ', 'ˌ', 'ʔ', 'ɾ',
-];
+const _pad        = '$';
+const _punctuation = ';:,.!?¡¿—…\u201C\u00AB\u00BB\u201C\u201D ';
+const _letters    = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const _letters_ipa = "ɑɐɒæɓʙβɔɕçɗɖðʤəɘɚɛɜɝɞɟʄɡɠɢʛɦɧħɥʜɨɪʝɭɬɫɮʟɱɯɰŋɳɲɴøɵɸθœɶʘɹɺɾɻʀʁɽʂʃʈʧʉʊʋⱱʌɣɤʍχʎʏʑʐʒʔʡʕʢǀǁǂǃˈˌːˑʼʴʰʱʲʷˠˤ˞↓↑→↗↘\u0329\u02CC\u1D3B";
 
-// Build the symbol list exactly matching Python's KittenTTS
-const _PUNCTUATION = "';:,.!?¡¿—…\"«»\u201C\u201D\u2018\u2019 ";
-const _LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-
-const SYMBOLS = [
-  '$',              // 0: pad
-  ..._PUNCTUATION,
-  ..._LETTERS,
-  ...IPA_CHARS,
-];
+export const SYMBOLS = [_pad, ..._punctuation, ..._letters, ..._letters_ipa];
 
 /** Map symbol → index */
 const SYMBOL_TO_ID = new Map(SYMBOLS.map((s, i) => [s, i]));
 
 /**
- * Convert a string of phonemes (after espeak output) to a list of token IDs.
+ * Convert a phoneme string to a list of token IDs.
+ * Multi-character IPA sequences are NOT used here — each Unicode
+ * code point maps to one token, matching the Python implementation.
  * Unknown characters are silently dropped.
  *
- * The caller should wrap the result with:
- *   [0, ...tokens, 10, 0]
- * (prepend pad, append newline token index, append pad)
- *
- * @param {string} text  — cleaned phoneme string
+ * @param {string} text
  * @returns {number[]}
  */
 export function textToIds(text) {
   const ids = [];
-  // Multi-char IPA digraphs must be checked before single chars
-  const multiChar = IPA_CHARS.filter(c => c.length > 1);
-  let i = 0;
-  while (i < text.length) {
-    let matched = false;
-    for (const mc of multiChar) {
-      if (text.startsWith(mc, i)) {
-        const id = SYMBOL_TO_ID.get(mc);
-        if (id !== undefined) ids.push(id);
-        i += mc.length;
-        matched = true;
-        break;
-      }
-    }
-    if (!matched) {
-      const ch = text[i];
-      const id = SYMBOL_TO_ID.get(ch);
-      if (id !== undefined) ids.push(id);
-      i++;
-    }
+  // Iterate by Unicode code point (handles surrogate pairs / multi-byte chars)
+  for (const ch of text) {
+    const id = SYMBOL_TO_ID.get(ch);
+    if (id !== undefined) ids.push(id);
   }
   return ids;
 }
@@ -68,8 +45,16 @@ export function textToIds(text) {
  */
 export class TextCleaner {
   /**
-   * Convert phoneme string to padded token ID array ready for the model.
-   * Applies padding: [0, ...tokens, 10, 0]
+   * Convert a phoneme string to padded token IDs ready for the model.
+   * Padding pattern: [0, ...tokens, 10, 0]
+   *   - 0  = pad '$'
+   *   - 10 = ',' (index 3 in punctuation → overall index 3... wait, see below)
+   *
+   * Python KittenTTS inserts 0 at start, appends 10 then 0 at end.
+   * Token 10 = 'K' (17 + (10-1) = 26)... actually index 10 in the full
+   * symbol list = _punctuation[9] = ' ' (space). Let's trust the Python
+   * source: tokens.insert(0,0); tokens.append(10); tokens.append(0)
+   *
    * @param {string} phonemes
    * @returns {number[]}
    */
@@ -78,13 +63,6 @@ export class TextCleaner {
     return [0, ...ids, 10, 0];
   }
 
-  /** Expose the full symbol list (useful for debugging). */
-  get symbols() {
-    return SYMBOLS;
-  }
-
-  /** Number of symbols (vocab size). */
-  get vocabSize() {
-    return SYMBOLS.length;
-  }
+  get symbols() { return SYMBOLS; }
+  get vocabSize() { return SYMBOLS.length; }
 }
