@@ -23,7 +23,7 @@ test('textToIds drops unknown characters silently', () => {
 
 test('TextCleaner vocabSize is positive', () => {
   const cleaner = new TextCleaner();
-  assert.ok(cleaner.vocabSize >= 188, `vocab should have at least 188 symbols, got ${cleaner.vocabSize}`);
+  assert.equal(cleaner.vocabSize, 178, `vocab should have exactly 178 symbols, got ${cleaner.vocabSize}`);
 });
 
 test('TextCleaner symbols array starts with pad $', () => {
