@@ -4,3 +4,4 @@ node_modules/
 *.npz
 .cache/
 dist/
+docs/bundle.js

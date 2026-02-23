@@ -174,4 +174,4 @@ src/
 
 ## License
 
-MIT
+[Apache 2.0](./LICENSE) — see [NOTICE](./NOTICE) for attribution to the original [KittenTTS](https://github.com/KittenML/KittenTTS) by KittenML / Stellon Labs.

@@ -431,11 +431,7 @@
   // Imports via CDN — uses the pre-built UMD/ESM bundles
   // ──────────────────────────────────────────────────────────────────────────
 
-  // NOTE: Replace these with actual CDN URLs once kitten-tts-js is published.
-  // For now this page shows the UI and wires up the logic;
-  // the CDN import will resolve once the package is on npm/jsDelivr.
-  // Fallback: uses a mock that explains the status.
-
+  // bundle.js is built by `npm run build:pages` and deployed by CI.
   let KittenTTS = null;
   let tts = null;
   let lastBlob = null;
@@ -465,20 +461,8 @@
     generateBtn.disabled = true;
 
     try {
-      // Try loading from CDN (esm.sh) — works once package is published
-      const mod = await import(`https://esm.sh/kitten-tts-js`).catch(() => null);
-      if (mod && mod.KittenTTS) {
-        KittenTTS = mod.KittenTTS;
-      } else {
-        // Fallback: load from local build (for dev / self-hosted Pages)
-        const local = await import('../src/index.js').catch(() => null);
-        if (local && local.KittenTTS) {
-          KittenTTS = local.KittenTTS;
-        } else {
-          throw new Error('Could not load kitten-tts-js. Please check the console.');
-        }
-      }
-
+      const mod = await import('./bundle.js');
+      KittenTTS = mod.KittenTTS;
       tts = await KittenTTS.from_pretrained(modelId);
       setStatus('Model loaded. Ready to generate!', 'success');
     } catch (err) {
