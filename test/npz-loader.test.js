@@ -23,8 +23,11 @@ function makeNpy(data, shape) {
   view.setUint16(8, headerLen, true);
   new TextEncoder().encodeInto(headerPadded, bytes.subarray(10));
 
-  const f32 = new Float32Array(buf, 10 + headerLen);
-  data.forEach((v, i) => { f32[i] = v; });
+  // Write float32 values byte-by-byte via DataView to avoid alignment issues
+  const dataOffset = 10 + headerLen;
+  for (let i = 0; i < data.length; i++) {
+    view.setFloat32(dataOffset + i * 4, data[i], true);
+  }
 
   return buf;
 }
