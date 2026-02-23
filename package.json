@@ -1,7 +1,7 @@
 {
   "name": "kitten-tts-js",
   "version": "0.1.0",
-  "description": "JavaScript/TypeScript port of KittenTTS — ultra-lightweight TTS via ONNX models",
+  "description": "Unofficial JavaScript/TypeScript port of KittenTTS (by KittenML/Stellon Labs) — ultra-lightweight TTS via ONNX models, runs in Node.js and browser",
   "type": "module",
   "exports": {
     ".": {
@@ -13,7 +13,9 @@
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "files": [
-    "src/"
+    "src/",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "test": "node examples/node-example.mjs"
@@ -33,7 +35,16 @@
     "wasm",
     "kitten-tts",
     "voice",
-    "synthesis"
+    "synthesis",
+    "styletts2"
   ],
-  "license": "MIT"
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Algiras/kitten-tts-js.git"
+  },
+  "homepage": "https://algiras.github.io/kitten-tts-js/",
+  "bugs": {
+    "url": "https://github.com/Algiras/kitten-tts-js/issues"
+  }
 }
