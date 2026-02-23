@@ -58,6 +58,18 @@ export class KittenTTS {
       ort = await import('onnxruntime-node');
     } catch {
       ort = await import('onnxruntime-web');
+      // Tell onnxruntime-web where its .wasm files live.
+      // In the GitHub Pages build the files are copied next to bundle.js.
+      // Fall back to the jsDelivr CDN if running from a custom origin.
+      if (!ort.env.wasm.wasmPaths) {
+        try {
+          // Resolve relative to the current script's location
+          const scriptBase = new URL('.', import.meta.url).href;
+          ort.env.wasm.wasmPaths = scriptBase;
+        } catch {
+          ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20/dist/';
+        }
+      }
     }
 
     const session = await ort.InferenceSession.create(modelBuffer);
@@ -202,6 +214,7 @@ export class KittenTTS {
     } catch {
       ort = await import('onnxruntime-web');
     }
+    // (wasmPaths already set in from_pretrained)
 
     const seqLen = input_ids.length;
     const inputIdsTensor = new ort.Tensor('int64',

@@ -20,7 +20,7 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "example": "node examples/node-example.mjs",
-    "build:pages": "esbuild src/index.browser.js --bundle --format=esm --outfile=docs/bundle.js --platform=browser --external:onnxruntime-node --external:fs --external:path --external:os --external:stream --external:url --external:crypto --external:module --external:node:*"
+    "build:pages": "esbuild src/index.browser.js --bundle --format=esm --outfile=docs/bundle.js --platform=browser --external:onnxruntime-node --external:fs --external:path --external:os --external:stream --external:url --external:crypto --external:module --external:node:* && cp node_modules/onnxruntime-web/dist/ort-wasm*.wasm docs/"
   },
   "dependencies": {
     "onnxruntime-node": "^1.20.0",
