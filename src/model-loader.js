@@ -47,7 +47,8 @@ async function nodeCacheGet(cacheKey) {
   const cacheDir = path.join(os.homedir(), '.cache', CACHE_DIR_NAME);
   const filePath = path.join(cacheDir, cacheKey);
   if (fs.existsSync(filePath)) {
-    return fs.readFileSync(filePath).buffer;
+    const buf = fs.readFileSync(filePath);
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
   }
   return null;
 }

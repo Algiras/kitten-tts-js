@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,7 +19,11 @@
       --radius: 10px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       background: var(--bg);
@@ -39,7 +44,9 @@
       gap: 0.75rem;
     }
 
-    .logo { font-size: 1.5rem; }
+    .logo {
+      font-size: 1.5rem;
+    }
 
     header h1 {
       font-size: 1.25rem;
@@ -70,7 +77,9 @@
       transition: color 0.15s;
     }
 
-    header a:hover { color: var(--text); }
+    header a:hover {
+      color: var(--text);
+    }
 
     main {
       width: 100%;
@@ -139,10 +148,18 @@
       line-height: 1.5;
     }
 
-    textarea:focus { border-color: var(--accent); }
+    textarea:focus {
+      border-color: var(--accent);
+    }
 
-    .row { display: flex; gap: 1rem; }
-    .row > div { flex: 1; }
+    .row {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .row>div {
+      flex: 1;
+    }
 
     select {
       width: 100%;
@@ -164,7 +181,9 @@
       padding-right: 2.25rem;
     }
 
-    select:focus { border-color: var(--accent); }
+    select:focus {
+      border-color: var(--accent);
+    }
 
     input[type=range] {
       width: 100%;
@@ -178,7 +197,9 @@
       gap: 0.75rem;
     }
 
-    .speed-row input { flex: 1; }
+    .speed-row input {
+      flex: 1;
+    }
 
     .speed-val {
       font-size: 0.9rem;
@@ -203,8 +224,14 @@
       transition: background 0.15s, transform 0.1s;
     }
 
-    button.generate:hover { background: var(--accent-hover); }
-    button.generate:active { transform: scale(0.99); }
+    button.generate:hover {
+      background: var(--accent-hover);
+    }
+
+    button.generate:active {
+      transform: scale(0.99);
+    }
+
     button.generate:disabled {
       background: var(--border);
       color: var(--text-muted);
@@ -221,11 +248,44 @@
       gap: 0.5rem;
     }
 
-    #status.error { color: var(--error); }
-    #status.success { color: var(--success); }
+    #status.error {
+      color: var(--error);
+    }
+
+    #status.success {
+      color: var(--success);
+    }
+
+    #status.loading .spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    /* Pulse animation for background processing */
+    #status.processing {
+      background: rgba(43, 85, 230, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #status.processing .pulse-dot {
+      display: inline-block;
+      width: 0.75rem;
+      height: 0.75rem;
+      background-color: var(--accent);
+      border-radius: 50%;
+      margin-right: 0.5rem;
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
 
     .spinner {
-      width: 14px; height: 14px;
+      width: 14px;
+      height: 14px;
       border: 2px solid var(--text-muted);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -233,13 +293,33 @@
       flex-shrink: 0;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .5;
+        transform: scale(0.8);
+      }
+    }
 
     .player-card {
       display: none;
     }
 
-    .player-card.visible { display: flex; }
+    .player-card.visible {
+      display: flex;
+    }
 
     audio {
       width: 100%;
@@ -323,216 +403,326 @@
       text-align: center;
     }
 
-    footer a { color: var(--text-muted); }
-    footer a:hover { color: var(--text); }
+    footer a {
+      color: var(--text-muted);
+    }
+
+    footer a:hover {
+      color: var(--text);
+    }
   </style>
 </head>
+
 <body>
 
-<header>
-  <span class="logo">🐱</span>
-  <h1>KittenTTS JS <span class="badge">v0.1</span></h1>
-  <nav class="links">
-    <a href="https://github.com/Algiras/kitten-tts-js" target="_blank">GitHub</a>
-    <a href="https://www.npmjs.com/package/kitten-tts-js" target="_blank">npm</a>
-    <a href="https://github.com/KittenML/KittenTTS" target="_blank">Original KittenTTS ↗</a>
-  </nav>
-</header>
+  <header>
+    <span class="logo">🐱</span>
+    <h1>KittenTTS JS <span class="badge">v0.1</span></h1>
+    <nav class="links">
+      <a href="https://github.com/Algiras/kitten-tts-js" target="_blank">GitHub</a>
+      <a href="https://www.npmjs.com/package/kitten-tts-js" target="_blank">npm</a>
+      <a href="https://github.com/KittenML/KittenTTS" target="_blank">Original KittenTTS ↗</a>
+    </nav>
+  </header>
 
-<main>
-  <div class="hero">
-    <h2>Text to Speech<br>in your browser</h2>
-    <p>KittenTTS JS — ultra-lightweight neural TTS powered by ONNX.<br>
-      No Python, no server. Runs entirely in WebAssembly.</p>
-    <p style="margin-top:0.75rem;font-size:0.8rem;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;line-height:1.6;">
-      ⚠️ <strong>Unofficial port</strong> — made by a hobbyist, not affiliated with KittenML.<br>
-      Original library: <a href="https://github.com/KittenML/KittenTTS" target="_blank" style="color:var(--accent)">github.com/KittenML/KittenTTS</a><br>
-      Models &amp; voices: <a href="https://huggingface.co/KittenML" target="_blank" style="color:var(--accent)">huggingface.co/KittenML</a>
-    </p>
-  </div>
-
-  <div class="info-grid">
-    <div class="info-item"><div class="val">25 MB</div><div class="lbl">nano model</div></div>
-    <div class="info-item"><div class="val">24 kHz</div><div class="lbl">sample rate</div></div>
-    <div class="info-item"><div class="val">8</div><div class="lbl">voices</div></div>
-  </div>
-
-  <div class="features">
-    <span class="chip">ONNX Runtime Web</span>
-    <span class="chip">eSpeak-NG WASM</span>
-    <span class="chip">No server needed</span>
-    <span class="chip">StyleTTS2-based</span>
-    <span class="chip">ESM + TypeScript</span>
-  </div>
-
-  <div class="card">
-    <div>
-      <label for="text-input">Text to synthesize</label>
-      <textarea id="text-input" placeholder="Type something to speak aloud…">Hello! I'm KittenTTS, a lightweight text-to-speech engine running entirely in your browser using WebAssembly. No server required.</textarea>
+  <main>
+    <div class="hero">
+      <h2>Text to Speech<br>in your browser</h2>
+      <p>KittenTTS JS — ultra-lightweight neural TTS powered by ONNX.<br>
+        No Python, no server. Runs entirely in WebAssembly.</p>
+      <p
+        style="margin-top:0.75rem;font-size:0.8rem;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;line-height:1.6;">
+        ⚠️ <strong>Unofficial port</strong> — made by a hobbyist, not affiliated with KittenML.<br>
+        Original library: <a href="https://github.com/KittenML/KittenTTS" target="_blank"
+          style="color:var(--accent)">github.com/KittenML/KittenTTS</a><br>
+        Models &amp; voices: <a href="https://huggingface.co/KittenML" target="_blank"
+          style="color:var(--accent)">huggingface.co/KittenML</a>
+      </p>
     </div>
 
-    <div class="row">
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="val" id="info-size">25 MB</div>
+        <div class="lbl" id="info-name">nano model</div>
+      </div>
+      <div class="info-item">
+        <div class="val">24 kHz</div>
+        <div class="lbl">sample rate</div>
+      </div>
+      <div class="info-item">
+        <div class="val">8</div>
+        <div class="lbl">voices</div>
+      </div>
+    </div>
+
+    <div class="features">
+      <span class="chip">ONNX Runtime Web</span>
+      <span class="chip">eSpeak-NG WASM</span>
+      <span class="chip">No server needed</span>
+      <span class="chip">StyleTTS2-based</span>
+      <span class="chip">ESM + TypeScript</span>
+    </div>
+
+    <div class="card">
       <div>
-        <label for="voice-select">Voice</label>
-        <select id="voice-select">
-          <option value="Bella">Bella (female)</option>
-          <option value="Luna">Luna (female)</option>
-          <option value="Rosie">Rosie (female)</option>
-          <option value="Kiki">Kiki (female)</option>
-          <option value="Leo" selected>Leo (male)</option>
-          <option value="Jasper">Jasper (male)</option>
-          <option value="Bruno">Bruno (male)</option>
-          <option value="Hugo">Hugo (male)</option>
-        </select>
+        <label for="text-input">Text to synthesize</label>
+        <textarea id="text-input"
+          placeholder="Type something to speak aloud…">Hello! I'm KittenTTS, a lightweight text-to-speech engine running entirely in your browser using WebAssembly. No server required.</textarea>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="voice-select">Voice</label>
+          <select id="voice-select">
+            <option value="Bella">Bella (female)</option>
+            <option value="Luna">Luna (female)</option>
+            <option value="Rosie">Rosie (female)</option>
+            <option value="Kiki">Kiki (female)</option>
+            <option value="Leo" selected>Leo (male)</option>
+            <option value="Jasper">Jasper (male)</option>
+            <option value="Bruno">Bruno (male)</option>
+            <option value="Hugo">Hugo (male)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="model-select">Model</label>
+          <select id="model-select">
+            <option value="KittenML/kitten-tts-nano-0.8" selected>Nano (25 MB) — fastest</option>
+            <option value="KittenML/kitten-tts-micro-0.8">Micro (40 MB)</option>
+            <option value="KittenML/kitten-tts-mini-0.8">Mini (80 MB) — best quality</option>
+          </select>
+        </div>
       </div>
 
       <div>
-        <label for="model-select">Model</label>
-        <select id="model-select">
-          <option value="KittenML/kitten-tts-nano-0.8" selected>Nano (25 MB) — fastest</option>
-          <option value="KittenML/kitten-tts-micro-0.8">Micro (40 MB)</option>
-          <option value="KittenML/kitten-tts-mini-0.8">Mini (80 MB) — best quality</option>
-        </select>
+        <label>Speed</label>
+        <div class="speed-row">
+          <input type="range" id="speed-range" min="0.5" max="2.0" step="0.05" value="1.0" />
+          <span class="speed-val" id="speed-val">1.0×</span>
+        </div>
+      </div>
+
+      <button class="generate" id="generate-btn">Generate Speech</button>
+
+      <div id="status"></div>
+    </div>
+
+    <div class="card player-card" id="player-card">
+      <label>Output Audio</label>
+      <audio id="audio-player" controls></audio>
+      <div class="download-row">
+        <button class="download-btn" id="download-btn">Download WAV</button>
+        <button class="download-btn" id="copy-url-btn">Copy Audio URL</button>
       </div>
     </div>
+  </main>
 
-    <div>
-      <label>Speed</label>
-      <div class="speed-row">
-        <input type="range" id="speed-range" min="0.5" max="2.0" step="0.05" value="1.0" />
-        <span class="speed-val" id="speed-val">1.0×</span>
-      </div>
-    </div>
+  <footer>
+    Unofficial JS port by <a href="https://github.com/Algiras/kitten-tts-js" target="_blank">Algiras</a> ·
+    Based on <a href="https://github.com/KittenML/KittenTTS" target="_blank">KittenTTS</a> by <a
+      href="https://github.com/KittenML" target="_blank">KittenML / Stellon Labs</a> ·
+    Models on <a href="https://huggingface.co/KittenML" target="_blank">HuggingFace</a> ·
+    <a href="https://github.com/Algiras/kitten-tts-js/blob/main/NOTICE" target="_blank">License &amp; Attribution</a>
+  </footer>
 
-    <button class="generate" id="generate-btn">Generate Speech</button>
+  <script type="module">
+    // ──────────────────────────────────────────────────────────────────────────
+    // Worker Initialization
+    // ──────────────────────────────────────────────────────────────────────────
 
-    <div id="status"></div>
-  </div>
+    // Create the Web Worker. When inlined for standalone, `window.__WORKER_BLOB_URL` will be used.
+    const workerUrl = window.__WORKER_BLOB_URL || './worker.js';
+    const worker = new Worker(workerUrl, { type: 'module' });
 
-  <div class="card player-card" id="player-card">
-    <label>Output Audio</label>
-    <audio id="audio-player" controls></audio>
-    <div class="download-row">
-      <button class="download-btn" id="download-btn">Download WAV</button>
-      <button class="download-btn" id="copy-url-btn">Copy Audio URL</button>
-    </div>
-  </div>
-</main>
+    // Simple message ID to Promise resolver mapping
+    const pendingRequests = new Map();
 
-<footer>
-  Unofficial JS port by <a href="https://github.com/Algiras/kitten-tts-js" target="_blank">Algiras</a> ·
-  Based on <a href="https://github.com/KittenML/KittenTTS" target="_blank">KittenTTS</a> by <a href="https://github.com/KittenML" target="_blank">KittenML / Stellon Labs</a> ·
-  Models on <a href="https://huggingface.co/KittenML" target="_blank">HuggingFace</a> ·
-  <a href="https://github.com/Algiras/kitten-tts-js/blob/main/NOTICE" target="_blank">License &amp; Attribution</a>
-</footer>
+    worker.onmessage = (e) => {
+      const { type, id, payload } = e.data;
+      if (pendingRequests.has(id)) {
+        if (type === 'error') {
+          pendingRequests.get(id).reject(new Error(payload));
+        } else {
+          pendingRequests.get(id).resolve(payload);
+        }
+        pendingRequests.delete(id);
+      }
+    };
 
-<script type="module">
-  // ──────────────────────────────────────────────────────────────────────────
-  // Imports via CDN — uses the pre-built UMD/ESM bundles
-  // ──────────────────────────────────────────────────────────────────────────
-
-  // bundle.js is built by `npm run build:pages` and deployed by CI.
-  let KittenTTS = null;
-  let tts = null;
-  let lastBlob = null;
-
-  const statusEl = document.getElementById('status');
-  const generateBtn = document.getElementById('generate-btn');
-  const playerCard = document.getElementById('player-card');
-  const audioPlayer = document.getElementById('audio-player');
-  const downloadBtn = document.getElementById('download-btn');
-  const copyUrlBtn = document.getElementById('copy-url-btn');
-  const speedRange = document.getElementById('speed-range');
-  const speedVal = document.getElementById('speed-val');
-
-  speedRange.addEventListener('input', () => {
-    speedVal.textContent = parseFloat(speedRange.value).toFixed(2) + '×';
-  });
-
-  function setStatus(msg, type = '') {
-    statusEl.className = type;
-    statusEl.innerHTML = type === 'loading'
-      ? `<span class="spinner"></span> ${msg}`
-      : msg;
-  }
-
-  async function loadModel(modelId) {
-    setStatus('Loading model (first load downloads ~25 MB, cached after)…', 'loading');
-    generateBtn.disabled = true;
-
-    try {
-      const mod = await import('./bundle.js');
-      KittenTTS = mod.KittenTTS;
-      tts = await KittenTTS.from_pretrained(modelId);
-      setStatus('Model loaded. Ready to generate!', 'success');
-    } catch (err) {
-      setStatus('Failed to load model: ' + err.message, 'error');
-      console.error(err);
-    } finally {
-      generateBtn.disabled = false;
-    }
-  }
-
-  async function generate() {
-    const text = document.getElementById('text-input').value.trim();
-    if (!text) { setStatus('Please enter some text.', 'error'); return; }
-
-    const voice = document.getElementById('voice-select').value;
-    const speed = parseFloat(speedRange.value);
-    const modelId = document.getElementById('model-select').value;
-
-    generateBtn.disabled = true;
-
-    // Load or reload model if needed
-    if (!tts) {
-      await loadModel(modelId);
-      if (!tts) return;
+    /** Helper to wrap worker postMessages in Promises */
+    function postToWorker(type, payload) {
+      return new Promise((resolve, reject) => {
+        const id = Date.now().toString() + Math.random().toString();
+        pendingRequests.set(id, { resolve, reject });
+        worker.postMessage({ type, id, payload });
+      });
     }
 
-    setStatus('Synthesizing…', 'loading');
+    // State
+    let ttsLoaded = false;
+    let lastBlob = null;
 
-    try {
-      const audio = await tts.generate(text, { voice, speed });
-      const blob = audio.toBlob();
-      lastBlob = blob;
+    const statusEl = document.getElementById('status');
+    const generateBtn = document.getElementById('generate-btn');
+    const playerCard = document.getElementById('player-card');
+    const audioPlayer = document.getElementById('audio-player');
+    const downloadBtn = document.getElementById('download-btn');
+    const copyUrlBtn = document.getElementById('copy-url-btn');
+    const speedRange = document.getElementById('speed-range');
+    const speedVal = document.getElementById('speed-val');
 
-      const url = URL.createObjectURL(blob);
-      audioPlayer.src = url;
-      playerCard.classList.add('visible');
+    speedRange.addEventListener('input', () => {
+      speedVal.textContent = parseFloat(speedRange.value).toFixed(2) + '×';
+    });
 
-      const dur = audio.duration.toFixed(1);
-      setStatus(`Done! ${dur}s of audio · ${voice} · ${speed.toFixed(2)}× speed`, 'success');
-
-      downloadBtn.onclick = () => {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `kitten-tts-${voice.toLowerCase()}.wav`;
-        a.click();
-      };
-
-      copyUrlBtn.onclick = async () => {
-        await navigator.clipboard.writeText(url);
-        copyUrlBtn.textContent = 'Copied!';
-        setTimeout(() => { copyUrlBtn.textContent = 'Copy Audio URL'; }, 2000);
-      };
-    } catch (err) {
-      setStatus('Error: ' + err.message, 'error');
-      console.error(err);
-    } finally {
-      generateBtn.disabled = false;
+    function setStatus(msg, type = '') {
+      statusEl.className = type;
+      if (type === 'loading') {
+        statusEl.innerHTML = `<span class="spinner"></span> ${msg}`;
+      } else if (type === 'processing') {
+        statusEl.innerHTML = `<span class="pulse-dot"></span> ${msg}`;
+      } else {
+        statusEl.innerHTML = msg;
+      }
     }
-  }
 
-  generateBtn.addEventListener('click', generate);
+    async function loadModel(modelId) {
+      let sizeStr = "~25 MB";
+      if (modelId.includes("micro")) sizeStr = "~40 MB";
+      if (modelId.includes("mini")) sizeStr = "~80 MB";
 
-  // Reload model when model selector changes
-  document.getElementById('model-select').addEventListener('change', () => {
-    tts = null;
-  });
+      setStatus(`Loading model (first load downloads ${sizeStr}, cached after)…`, 'loading');
+      generateBtn.disabled = true;
+      ttsLoaded = false;
 
-  // Auto-load model on page load (warm up WASM)
-  const initialModel = document.getElementById('model-select').value;
-  loadModel(initialModel);
-</script>
+      try {
+        await postToWorker('init', { modelId });
+        ttsLoaded = true;
+        setStatus('Model loaded. Ready to generate!', 'success');
+      } catch (err) {
+        setStatus('Failed to load model: ' + err.message, 'error');
+        console.error(err);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+
+    // Helper to generate a compliant WAV blob manually from a Float32Array,
+    // since wav-encoder is bundled in the worker, not the main thread.
+    function createWavBlob(floatArr, sampleRate) {
+      const numChannels = 1;
+      const byteRate = sampleRate * numChannels * 2;
+      const blockAlign = numChannels * 2;
+      const buffer = new ArrayBuffer(44 + floatArr.length * 2);
+      const view = new DataView(buffer);
+
+      // RIFF chunk descriptor
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + floatArr.length * 2, true);
+      writeString(view, 8, 'WAVE');
+      // fmt sub-chunk
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);   // subchunk1size (16 for PCM)
+      view.setUint16(20, 1, true);    // audio format (1 = PCM)
+      view.setUint16(22, 1, true);    // num channels
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, byteRate, true);
+      view.setUint16(32, blockAlign, true);
+      view.setUint16(34, 16, true);   // bits per sample
+      // data sub-chunk
+      writeString(view, 36, 'data');
+      view.setUint32(40, floatArr.length * 2, true);
+
+      // write PCM samples
+      let offset = 44;
+      for (let i = 0; i < floatArr.length; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, floatArr[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+
+    async function generate() {
+      const text = document.getElementById('text-input').value.trim();
+      if (!text) { setStatus('Please enter some text.', 'error'); return; }
+
+      const voice = document.getElementById('voice-select').value;
+      const speed = parseFloat(speedRange.value);
+      const modelId = document.getElementById('model-select').value;
+
+      generateBtn.disabled = true;
+
+      // Load or reload model if needed
+      if (!ttsLoaded) {
+        await loadModel(modelId);
+        if (!ttsLoaded) return;
+      }
+
+      setStatus('Synthesizing in background worker… (UI is responsive)', 'processing');
+
+      try {
+        const result = await postToWorker('generate', { text, voice, speed });
+
+        // Construct standard WAV directly from raw float array
+        const blob = createWavBlob(result.floatArr, result.sampleRate);
+        lastBlob = blob;
+
+        const url = URL.createObjectURL(blob);
+        audioPlayer.src = url;
+        playerCard.classList.add('visible');
+
+        const dur = (result.floatArr.length / result.sampleRate).toFixed(1);
+        setStatus(`Done! ${dur}s of audio · ${voice} · ${speed.toFixed(2)}× speed`, 'success');
+
+        downloadBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `kitten-tts-${voice.toLowerCase()}.wav`;
+          a.click();
+        };
+
+        copyUrlBtn.onclick = async () => {
+          await navigator.clipboard.writeText(url);
+          copyUrlBtn.textContent = 'Copied!';
+          setTimeout(() => { copyUrlBtn.textContent = 'Copy Audio URL'; }, 2000);
+        };
+      } catch (err) {
+        setStatus('Error: ' + err.message, 'error');
+        console.error(err);
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+
+    generateBtn.addEventListener('click', generate);
+
+    // Reload model when model selector changes
+    document.getElementById('model-select').addEventListener('change', (e) => {
+      ttsLoaded = false;
+      const modelId = e.target.value;
+
+      // Update top info banner
+      const infoSize = document.getElementById('info-size');
+      const infoName = document.getElementById('info-name');
+      if (modelId.includes("nano")) { infoSize.textContent = "25 MB"; infoName.textContent = "nano model"; }
+      if (modelId.includes("micro")) { infoSize.textContent = "40 MB"; infoName.textContent = "micro model"; }
+      if (modelId.includes("mini")) { infoSize.textContent = "80 MB"; infoName.textContent = "mini model"; }
+
+      loadModel(modelId);
+    });
+
+    // Auto-load model on page load (warm up WASM)
+    const initialModel = document.getElementById('model-select').value;
+    loadModel(initialModel);
+  </script>
 </body>
+
 </html>

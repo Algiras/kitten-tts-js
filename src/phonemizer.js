@@ -36,21 +36,36 @@ async function getEspeakInstance() {
  * @returns {string}
  */
 export function basicEnglishTokenize(text) {
-  const tokens = text.match(/\w+|[^\w\s]/g) || [];
+  const cleaned = text.replace(/_/g, '');
+  const tokens = cleaned.match(/[\p{L}\p{M}\p{N}_]+|[^\p{L}\p{M}\p{N}_\s]/gu) || [];
   return tokens.join(' ');
 }
 
-/**
- * Phonemize text using eSpeak-NG en-us, returning a tokenized IPA string.
- *
- * @param {string} text  — preprocessed plain text
- * @returns {Promise<string>} — IPA phoneme string, tokenized
- */
 export async function phonemize(text) {
   const instance = await getEspeakInstance();
 
   const result = instance.synthesize_ipa(text);
   const ipa = (result && result.ipa) ? result.ipa : String(result || '');
 
-  return basicEnglishTokenize(ipa);
+  const rawTokens = text.match(/[\p{L}\p{M}\p{N}_]+|[^\p{L}\p{M}\p{N}_\s]/gu) || [];
+  const cleanedIpa = ipa.replace(/_/g, '').replace(/\n/g, ' ');
+  const ipaTokens = cleanedIpa.match(/[\p{L}\p{M}\p{N}_]+|[^\p{L}\p{M}\p{N}_\s]/gu) || [];
+
+  let out = [];
+  let ipaIdx = 0;
+
+  for (const token of rawTokens) {
+    if (token.match(/^[\p{L}\p{M}\p{N}_]+$/u)) {
+      if (ipaIdx < ipaTokens.length) {
+        out.push(ipaTokens[ipaIdx]);
+        ipaIdx++;
+      } else {
+        out.push(token);
+      }
+    } else {
+      out.push(token);
+    }
+  }
+
+  return out.join(' ');
 }

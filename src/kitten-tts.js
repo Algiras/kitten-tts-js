@@ -192,14 +192,12 @@ export class KittenTTS {
     const refId = Math.min(tokenIds.length, numStyles - 1);
     const style = voiceData.slice(refId * styleDim, (refId + 1) * styleDim);
 
-    // 5. Apply speed prior
-    const effectiveSpeed = speed * (this._speedPriors[internalKey] || 1.0);
-
+    // 5. Pass speed directly (matching Python lib behaviour; speed_priors are not applied)
     return {
       input_ids: tokenIds,
       style,
       styleDim,
-      speed: effectiveSpeed,
+      speed,
     };
   }
 
