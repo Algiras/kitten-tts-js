@@ -3,7 +3,6 @@
 > JavaScript/TypeScript port of [KittenTTS](https://github.com/KittenML/KittenTTS) — ultra-lightweight neural TTS via ONNX. Works in Node.js, browser (WebAssembly), and any JS environment. Zero Python dependency.
 
 [![npm version](https://img.shields.io/npm/v/kitten-tts-js)](https://www.npmjs.com/package/kitten-tts-js)
-[![npm downloads](https://img.shields.io/npm/dm/kitten-tts-js)](https://www.npmjs.com/package/kitten-tts-js)
 [![CI](https://github.com/Algiras/kitten-tts-js/actions/workflows/ci.yml/badge.svg)](https://github.com/Algiras/kitten-tts-js/actions/workflows/ci.yml)
 [![License](https://img.shields.io/npm/l/kitten-tts-js)](./LICENSE)
 
