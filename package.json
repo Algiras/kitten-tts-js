@@ -1,6 +1,6 @@
 {
   "name": "kitten-tts-js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Unofficial JavaScript/TypeScript port of KittenTTS (by KittenML/Stellon Labs) — ultra-lightweight TTS via ONNX models, runs in Node.js and browser",
   "type": "module",
   "exports": {
