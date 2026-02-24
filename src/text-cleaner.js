@@ -47,7 +47,7 @@ export function textToIds(text) {
 export class TextCleaner {
   clean(phonemes) {
     const ids = textToIds(phonemes);
-    return [0, ...ids, 0];
+    return [0, ...ids, 10, 0];
   }
 
   get symbols() { return SYMBOLS; }
