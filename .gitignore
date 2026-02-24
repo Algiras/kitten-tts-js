@@ -8,3 +8,4 @@ docs/bundle.js
 docs/*.wasm
 docs/*.mjs
 docs/*.data
+docs/index-standalone.html

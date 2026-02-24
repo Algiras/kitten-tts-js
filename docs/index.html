@@ -531,9 +531,7 @@
     // Worker Initialization
     // ──────────────────────────────────────────────────────────────────────────
 
-    // Create the Web Worker. When inlined for standalone, `window.__WORKER_BLOB_URL` will be used.
-    const workerUrl = window.__WORKER_BLOB_URL || './worker.js';
-    const worker = new Worker(workerUrl, { type: 'module' });
+    const worker = new Worker('./worker.js', { type: 'module' });
 
     // Simple message ID to Promise resolver mapping
     const pendingRequests = new Map();

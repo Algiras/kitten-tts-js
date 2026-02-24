@@ -13,12 +13,8 @@ self.onmessage = async (e) => {
             // 1. Import the pre-built library. In dev, this is the adjacent `bundle.js`.
             // When inlined for standalone, the bundle.js script is pushed to the worker blob FIRST.
             if (!KittenTTS) {
-                if (self.__KittenTTS) {
-                    KittenTTS = self.__KittenTTS;
-                } else {
-                    const mod = await import('./bundle.js');
-                    KittenTTS = mod.KittenTTS;
-                }
+                const mod = await import('./bundle.js');
+                KittenTTS = mod.KittenTTS;
             }
 
             // 2. Clear old model memory if one exists, then download and load the HuggingFace model into ONNX
