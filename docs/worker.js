@@ -21,7 +21,10 @@ self.onmessage = async (e) => {
                 }
             }
 
-            // 2. Download and load the HuggingFace model into ONNX
+            // 2. Clear old model memory if one exists, then download and load the HuggingFace model into ONNX
+            if (tts && typeof tts.release === 'function') {
+                await tts.release();
+            }
             tts = await KittenTTS.from_pretrained(payload.modelId);
 
             self.postMessage({ type: 'init-done', id });
@@ -34,13 +37,14 @@ self.onmessage = async (e) => {
             // 3. Generate audio using ONNX Runtime Wasm in the background thread
             const audio = await tts.generate(text, opts);
 
-            // audio.data is a Float32Array. We can transfer it to the main thread efficiently.
-            const floatArr = audio.data;
+            // Create a perfectly sized copy of the array because the underlying .buffer 
+            // from ONNX Runtime often contains trailing unallocated WASM memory (silence)
+            const exactSizedArr = new Float32Array(audio.data);
             const sampleRate = audio.sampling_rate;
 
             self.postMessage(
-                { type: 'generate-done', id, payload: { floatArr, sampleRate } },
-                [floatArr.buffer] // Transfer ownership to avoid copying megabytes
+                { type: 'generate-done', id, payload: { floatArr: exactSizedArr, sampleRate } },
+                [exactSizedArr.buffer] // Transfer ownership of the copied buffer
             );
         }
     } catch (err) {

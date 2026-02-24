@@ -20,15 +20,15 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "example": "node examples/node-example.mjs",
-    "build:pages": "esbuild src/index.browser.js --bundle --format=esm --outfile=docs/bundle.js --platform=browser --external:onnxruntime-node --external:fs --external:path --external:os --external:stream --external:url --external:crypto --external:module --external:node:* && cp node_modules/onnxruntime-web/dist/ort-wasm* docs/ && find node_modules/@echogarden/espeak-ng-emscripten -name '*.data' -o -name '*.wasm' | xargs -I{} cp {} docs/ && node scripts/inline-bundle.mjs",
+    "build:pages": "esbuild src/index.browser.js --bundle --format=esm --outfile=docs/bundle.js --platform=browser --external:onnxruntime-node --external:fs --external:path --external:os --external:stream --external:url --external:crypto --external:module --external:node:* && cp node_modules/onnxruntime-web/dist/ort-wasm* docs/ && node scripts/inline-bundle.mjs",
     "dev": "npm run build:pages && npx serve docs"
   },
   "dependencies": {
+    "@huggingface/hub": "^0.18.0",
+    "jszip": "^3.10.1",
     "onnxruntime-node": "^1.20.0",
     "onnxruntime-web": "^1.20.0",
-    "@huggingface/hub": "^0.18.0",
-    "@echogarden/espeak-ng-emscripten": "^0.3.0",
-    "jszip": "^3.10.1",
+    "phonemizer": "^1.2.1",
     "wav-encoder": "^1.3.0"
   },
   "devDependencies": {

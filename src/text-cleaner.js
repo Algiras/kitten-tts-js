@@ -25,6 +25,21 @@ const SYMBOL_TO_ID = new Map();
 SYMBOLS.forEach((s, i) => SYMBOL_TO_ID.set(s, i));
 
 /**
+ * Basic English tokenizer that splits on whitespace and punctuation.
+ * Direct port of python: re.findall(r"\w+|[^\w\s]", text)
+ * Note: JS \w doesn't include unicode letters natively like Python 3 does,
+ * so we use \p{L}\p{M}\p{N}_ to emulate Python's \w.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function basic_english_tokenize(text) {
+  const pythonWordChar = '\\p{L}\\p{M}\\p{N}_';
+  const regex = new RegExp(`[${pythonWordChar}]+|[^${pythonWordChar}\\s]`, 'gu');
+  return text.match(regex) || [];
+}
+
+/**
  * Convert a phoneme string to a list of token IDs.
  * Each Unicode code point maps to one token. Unknown chars are dropped.
  *

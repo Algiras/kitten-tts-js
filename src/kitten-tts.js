@@ -9,7 +9,7 @@
 
 import { downloadModel } from './model-loader.js';
 import { loadNpz } from './npz-loader.js';
-import { TextCleaner } from './text-cleaner.js';
+import { TextCleaner, basic_english_tokenize } from './text-cleaner.js';
 import { TextPreprocessor } from './preprocess.js';
 import { phonemize } from './phonemizer.js';
 import { RawAudio } from './audio.js';
@@ -33,13 +33,18 @@ const DEFAULT_VOICE = 'Leo';
 
 export class KittenTTS {
   /** @private */
-  constructor(session, voices, voiceAliases, speedPriors) {
-    this._session = session;     // ONNX InferenceSession
-    this._voices = voices;       // { [key]: { data: Float32Array, shape: [N, dim] } }
-    this._voiceAliases = voiceAliases;
-    this._speedPriors = speedPriors || {};
+  constructor(session, voices, config) {
+    this._session = session;
+    this._voices = voices;
+    this._config = config;
     this._cleaner = new TextCleaner();
-    this._preprocessor = new TextPreprocessor();
+    this._preprocessor = new TextPreprocessor({ remove_punctuation: false });
+
+    // Constants
+    this.sampleRate = config.sample_rate || SAMPLE_RATE;
+    this.voiceAliases = { ...DEFAULT_VOICE_ALIASES, ...(config.voice_aliases || {}) };
+    this.speedPriors = config.speed_priors || {};
+    this.availableVoices = Object.keys(this._voices);
   }
 
   /**
@@ -70,15 +75,17 @@ export class KittenTTS {
           ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20/dist/';
         }
       }
+
+      // Accelerate inference via WASM SIMD and Multi-threading
+      ort.env.wasm.numThreads = typeof navigator !== 'undefined' ? (navigator.hardwareConcurrency || 4) : 4;
+      ort.env.wasm.simd = true;
     }
 
-    const session = await ort.InferenceSession.create(modelBuffer);
+    const sessionOptions = ort.env.wasm ? { executionProviders: ['wasm'] } : {};
+    const session = await ort.InferenceSession.create(modelBuffer, sessionOptions);
     const voices = await loadNpz(voicesBuffer);
 
-    const voiceAliases = { ...DEFAULT_VOICE_ALIASES, ...(config.voice_aliases || {}) };
-    const speedPriors = config.speed_priors || {};
-
-    return new KittenTTS(session, voices, voiceAliases, speedPriors);
+    return new KittenTTS(session, voices, config);
   }
 
   /**
@@ -86,7 +93,7 @@ export class KittenTTS {
    * @returns {string[]}
    */
   list_voices() {
-    return Object.keys(this._voiceAliases);
+    return Object.keys(this.voiceAliases);
   }
 
   /**
@@ -137,31 +144,76 @@ export class KittenTTS {
     }
   }
 
+  /**
+   * Release the underlying ONNX Runtime session to free WebAssembly memory.
+   * This is especially important in browsers to prevent memory leaks when switching models.
+   */
+  async release() {
+    if (this._session && typeof this._session.release === 'function') {
+      try {
+        await this._session.release();
+      } catch (err) {
+        console.warn('[kitten-tts] Failed to release ONNX session:', err);
+      }
+    }
+  }
+
   // ─── Internal ──────────────────────────────────────────────────────────────
 
   /**
-   * Split text into sentence chunks ≤ MAX_CHUNK_CHARS.
+   * Ensure text ends with punctuation. If not, add a comma.
+   * Direct port from Python onnx_model.py.
+   * @param {string} text
+   * @returns {string}
+   */
+  _ensurePunctuation(text) {
+    let t = text.trim();
+    if (!t) return t;
+    const last = t[t.length - 1];
+    if (!['.', '!', '?', ',', ';', ':'].includes(last)) {
+      t += ',';
+    }
+    return t;
+  }
+
+  /**
+   * Split text into chunks for processing long texts.
+   * Direct port from Python chunk_text().
    * @param {string} text
    * @returns {string[]}
    */
   _chunkText(text) {
-    // Split on sentence boundaries
-    const sentences = text.split(/(?<=[.!?])\s+/);
+    // Note: Python's re.split(r'[.!?]+', text) destroys the delimiter.
+    const sentences = text.split(/[.!?]+/);
     const chunks = [];
-    let current = '';
 
-    for (const sentence of sentences) {
-      if (current.length + sentence.length > MAX_CHUNK_CHARS && current.length > 0) {
-        chunks.push(current.trim());
-        current = sentence;
+    for (const s of sentences) {
+      const sentence = s.trim();
+      if (!sentence) continue;
+
+      if (sentence.length <= MAX_CHUNK_CHARS) {
+        chunks.push(this._ensurePunctuation(sentence));
       } else {
-        current = current ? `${current} ${sentence}` : sentence;
+        // Split long sentences by words
+        const words = sentence.split(/\s+/);
+        let tempChunk = '';
+        for (const word of words) {
+          if (tempChunk.length + word.length + 1 <= MAX_CHUNK_CHARS) {
+            tempChunk += tempChunk ? ` ${word}` : word;
+          } else {
+            if (tempChunk) {
+              chunks.push(this._ensurePunctuation(tempChunk.trim()));
+            }
+            tempChunk = word;
+          }
+        }
+        if (tempChunk) {
+          chunks.push(this._ensurePunctuation(tempChunk.trim()));
+        }
       }
     }
-    if (current.trim()) chunks.push(current.trim());
 
-    // Ensure each chunk ends with punctuation
-    return chunks.map(c => /[.!?]$/.test(c) ? c : c + '.');
+    return chunks;
   }
 
   /**
@@ -173,26 +225,32 @@ export class KittenTTS {
     const processedText = clean ? this._preprocessor.process(chunk) : chunk;
 
     // 2. Phonemize
-    const phonemes = await phonemize(processedText);
+    let phonemes = await phonemize(processedText);
 
     // 3. Tokenize → IDs with padding
+    phonemes = basic_english_tokenize(phonemes).join(' ');
     const tokenIds = this._cleaner.clean(phonemes);
 
     // 4. Look up voice
-    const internalKey = this._voiceAliases[voiceName] || voiceName;
-    if (!this._voices[internalKey]) {
-      const available = Object.keys(this._voices).join(', ');
-      throw new Error(`Voice '${voiceName}' (key: '${internalKey}') not found. Available: ${available}`);
+    if (this.voiceAliases[voiceName]) {
+      voiceName = this.voiceAliases[voiceName];
     }
-    const voiceEntry = this._voices[internalKey];
+    if (!this._voices[voiceName]) {
+      throw new Error(`Voice '${voiceName}' not found. Available: ${this.availableVoices.join(', ')}`);
+    }
+    const voiceEntry = this._voices[voiceName];
     const voiceData = voiceEntry.data;
     const [numStyles, styleDim] = voiceEntry.shape;
+
+    // 5. Apply speed priors from config metadata exactly like Python does
+    if (this.speedPriors[voiceName]) {
+      speed = speed * this.speedPriors[voiceName];
+    }
 
     // ref_id = min(text_len, N-1)
     const refId = Math.min(tokenIds.length, numStyles - 1);
     const style = voiceData.slice(refId * styleDim, (refId + 1) * styleDim);
 
-    // 5. Pass speed directly (matching Python lib behaviour; speed_priors are not applied)
     return {
       input_ids: tokenIds,
       style,

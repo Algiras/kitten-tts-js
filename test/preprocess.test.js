@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import { test } from 'node:test';
 import { TextPreprocessor } from '../src/preprocess.js';
 
-const p = new TextPreprocessor();
+const p = new TextPreprocessor({ lowercase: false });
 
 test('expands integers', () => {
   assert.equal(p.process('I have 3 cats'), 'I have three cats');
