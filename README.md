@@ -1,6 +1,6 @@
 # kitten-tts-js
 
-> JavaScript/TypeScript port of [KittenTTS](https://github.com/KittenML/KittenTTS) — ultra-lightweight neural TTS via ONNX. Works in Node.js, browser (WebAssembly), and any JS environment. Zero Python dependency.
+> JavaScript/TypeScript port of [KittenTTS](https://github.com/KittenML/KittenTTS) — ultra-lightweight neural TTS via ONNX. Works in Node.js and modern browsers with no Python dependency.
 
 [![npm version](https://img.shields.io/npm/v/kitten-tts-js)](https://www.npmjs.com/package/kitten-tts-js)
 [![CI](https://github.com/Algiras/kitten-tts-js/actions/workflows/ci.yml/badge.svg)](https://github.com/Algiras/kitten-tts-js/actions/workflows/ci.yml)
@@ -23,7 +23,7 @@
 ## Features
 
 - **Ultra-lightweight** — nano model is ~25 MB
-- **Runs anywhere** — Node.js (CPU), browser (WASM), Cloudflare Workers
+- **Node + browser support** — Node.js on CPU, browser on WASM, with WebGPU for Nano ONNX
 - **8 voices** — Bella, Luna, Rosie, Kiki, Leo, Jasper, Bruno, Hugo
 - **StyleTTS2-based** ONNX models from HuggingFace
 - **Streaming support** — sentence-by-sentence async generator
@@ -47,14 +47,66 @@ npm install kitten-tts-js
 ```js
 import { KittenTTS } from 'kitten-tts-js';
 
-const tts = await KittenTTS.from_pretrained('KittenML/kitten-tts-nano-0.8');
+const tts = await KittenTTS.from_pretrained('KittenML/kitten-tts-nano-0.8-int8');
 
 console.log(tts.list_voices());
 // → ['Bella', 'Jasper', 'Luna', 'Bruno', 'Rosie', 'Hugo', 'Kiki', 'Leo']
 
-const audio = await tts.generate('Hello from KittenTTS!', { voice: 'Bella' });
+const audio = await tts.generate('Hello from KittenTTS!', { voice: 'Jasper' });
 await audio.save('output.wav');
 ```
+
+### Runtime Modes (Node/browser)
+
+Use runtime modes to keep the full pipeline in JavaScript while selecting supported execution backends for each environment.
+
+```js
+import { KittenTTS } from 'kitten-tts-js';
+
+// Node explicit CPU mode with controlled threads
+const ttsCpu = await KittenTTS.from_pretrained('KittenML/kitten-tts-nano-0.8-int8', {
+  runtime: 'cpu',
+  numThreads: 4
+});
+
+// Browser CPU mode (WASM backend)
+const ttsBrowser = await KittenTTS.from_pretrained('onnx-community/KittenTTS-Micro-v0.8-ONNX', {
+  runtime: 'cpu',
+  wasmThreads: 4,
+  wasmSimd: true
+});
+
+// Browser GPU mode (WebGPU with automatic WASM fallback when unavailable)
+const ttsBrowserGpu = await KittenTTS.from_pretrained('onnx-community/KittenTTS-Nano-v0.8-ONNX', {
+  runtime: 'gpu'
+});
+```
+
+Runtime notes:
+
+- The library is supported in both Node.js and the browser.
+- Browser CPU/WASM works across the ONNX Community Nano, Micro, and Mini exports.
+- Browser GPU/WebGPU is currently Nano-only: `onnx-community/KittenTTS-Nano-v0.8-ONNX`.
+- Across the ONNX Community browser exports, Nano, Micro, and Mini cover all three size tiers.
+- Node runtime modes: `auto`, `cpu`.
+- Browser runtime modes: `auto`, `cpu`, `gpu` (`wasm` is accepted as a legacy alias of `cpu`).
+- Browser `gpu` uses the WebGPU execution provider and may fall back to WASM when unavailable.
+- `onnx-community/KittenTTS-Nano-v0.8-ONNX` is the browser-friendly GPU/WASM model.
+- `onnx-community/KittenTTS-Micro-v0.8-ONNX` and `onnx-community/KittenTTS-Mini-v0.8-ONNX` are CPU/WASM-only because their int8 ops are not supported by ORT WebGPU.
+- Node is intentionally CPU-only in the current runtime layer because the prior CoreML path underperformed and was removed.
+
+Runtime diagnostics:
+
+- Run `npm run diagnose:node-runtime -- --runtime cpu --json` to see requested runtime, actual runtime, and execution providers on your machine.
+- Run `npm run diagnose:node-runtime -- --models KittenML/kitten-tts-nano-0.8-int8,KittenML/kitten-tts-mini-0.8 --runtimes auto,cpu --no-generate --json` to sweep a small Node runtime matrix.
+
+Support matrix:
+
+| Environment | Runtime | Supported models |
+|-------------|---------|------------------|
+| Browser | CPU / WASM | Nano ONNX, Micro ONNX, Mini ONNX |
+| Browser | GPU / WebGPU | Nano ONNX only |
+| Node.js | CPU | KittenML models |
 
 ### Browser (inline)
 
@@ -62,7 +114,7 @@ await audio.save('output.wav');
 <script type="module">
   import { KittenTTS } from 'https://esm.sh/kitten-tts-js';
 
-  const tts = await KittenTTS.from_pretrained('KittenML/kitten-tts-nano-0.8');
+  const tts = await KittenTTS.from_pretrained('KittenML/kitten-tts-nano-0.8-int8');
   const audio = await tts.generate('Hello!', { voice: 'Luna' });
 
   const audioCtx = new AudioContext();
@@ -72,6 +124,24 @@ await audio.save('output.wav');
   source.start();
 </script>
 ```
+
+### Browser Interface (local UI)
+
+Run the built-in web interface locally:
+
+```bash
+npm run browser
+```
+
+Then open:
+
+```text
+http://localhost:4173
+```
+
+If port `4173` is already occupied, the command now exits with an explicit error instead of silently picking a different port.
+
+This serves [`docs/index.html`](./docs/index.html), where you can type text, pick voice/model, and generate speech directly in the browser.
 
 ### Browser (Web Worker — recommended for production)
 
@@ -98,14 +168,14 @@ self.onmessage = async ({ data }) => {
 **`main.js`**
 ```js
 const worker = new Worker('./worker.js', { type: 'module' });
-worker.postMessage({ type: 'load', modelId: 'KittenML/kitten-tts-nano-0.8' });
+worker.postMessage({ type: 'load', modelId: 'KittenML/kitten-tts-nano-0.8-int8' });
 
 worker.onmessage = ({ data }) => {
   if (data.type === 'ready') console.log('Model loaded!');
   if (data.type === 'audio') playFloat32(data.buf, data.sampleRate);
 };
 
-worker.postMessage({ type: 'generate', text: 'Hello world!', opts: { voice: 'Bella' } });
+worker.postMessage({ type: 'generate', text: 'Hello world!', opts: { voice: 'Bruno' } });
 
 function playFloat32(buf, sampleRate) {
   const audioCtx = new AudioContext({ sampleRate });
@@ -122,7 +192,7 @@ function playFloat32(buf, sampleRate) {
 
 ```js
 let i = 0;
-for await (const { text, audio } of tts.stream(longText, { voice: 'Leo' })) {
+for await (const { text, audio } of tts.stream(longText, { voice: 'Bruno' })) {
   console.log(`Chunk: "${text}" → ${audio.duration.toFixed(1)}s`);
   await audio.save(`chunk-${i++}.wav`);
 }
@@ -136,8 +206,12 @@ for await (const { text, audio } of tts.stream(longText, { voice: 'Leo' })) {
 
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| `modelId` | `string` | `'KittenML/kitten-tts-nano-0.8'` | HuggingFace repo ID |
+| `modelId` | `string` | `'KittenML/kitten-tts-nano-0.8-int8'` | HuggingFace repo ID |
 | `opts.cacheDir` | `string` | `~/.cache/kitten-tts` | Override cache dir (Node) |
+| `opts.runtime` | `string` | `'auto'` | Runtime mode: Node `auto/cpu`, browser `auto/cpu/gpu` (`wasm` accepted as legacy `cpu`) |
+| `opts.numThreads` | `number` | auto | Node intra-op threads |
+| `opts.wasmThreads` | `number` | auto | Browser WASM threads |
+| `opts.wasmSimd` | `boolean` | `true` | Browser WASM SIMD toggle |
 
 ### `tts.generate(text, opts?)`
 
@@ -179,9 +253,19 @@ Releases the underlying ONNX session to free WebAssembly memory. Useful when swi
 
 | Model ID | Size | Speed | Quality |
 |----------|------|-------|---------|
-| `KittenML/kitten-tts-nano-0.8` | ~25 MB | ★★★ | ★★☆ |
+| `KittenML/kitten-tts-nano-0.8-int8` | ~24 MB | ★★★ | ★★☆ |
+| `KittenML/kitten-tts-nano-0.8-fp32` | ~57 MB | ★★☆ | ★★☆ |
 | `KittenML/kitten-tts-micro-0.8` | ~40 MB | ★★☆ | ★★★ |
 | `KittenML/kitten-tts-mini-0.8` | ~80 MB | ★☆☆ | ★★★ |
+| `onnx-community/KittenTTS-Nano-v0.8-ONNX` | ~60 MB | ★★☆ | ★★☆ |
+| `onnx-community/KittenTTS-Micro-v0.8-ONNX` | ~45 MB | ★★☆ | ★★★ |
+| `onnx-community/KittenTTS-Mini-v0.8-ONNX` | ~82 MB | ★☆☆ | ★★★ |
+
+Browser runtime notes:
+- `onnx-community/KittenTTS-Nano-v0.8-ONNX` supports both WebGPU and WASM.
+- `onnx-community/KittenTTS-Micro-v0.8-ONNX` is WASM-only.
+- `onnx-community/KittenTTS-Mini-v0.8-ONNX` is WASM-only.
+- Node stays on CPU in the current runtime layer.
 
 ---
 
@@ -210,11 +294,45 @@ npm test              # run unit tests
 npm run build:pages   # build browser bundle → docs/
 ```
 
+### Benchmarks
+
+Pre-generated benchmark reports and comparison artifacts are included below.
+
+### Pre-generated audio permutations (no local run needed)
+
+Reference guides and indexes:
+
+- [kitten-node-permutations/index.json](./review-audio/kitten-node-permutations/index.json)
+
+Benchmark reports:
+
+- [speed-comparison.json](./review-audio/speed-comparison.json)
+
+Kitten JS outputs:
+
+- [js-nano-en.wav](./review-audio/js-nano-en.wav)
+- [js-nano-lt.wav](./review-audio/js-nano-lt.wav)
+- [js-micro-en.wav](./review-audio/js-micro-en.wav)
+- [js-micro-lt.wav](./review-audio/js-micro-lt.wav)
+- [js-mini-en.wav](./review-audio/js-mini-en.wav)
+- [js-mini-lt.wav](./review-audio/js-mini-lt.wav)
+
+Kokoro vs Kitten single-sample outputs:
+
+- [kitten-tts-leo.wav](./review-audio/kitten-tts-leo.wav)
+- [kokoro-af_heart.wav](./review-audio/kokoro-af_heart.wav)
+
+Original parity references:
+
+- [original-kittentts-mini-en.wav](./review-audio/original-kittentts-mini-en.wav)
+- [original-kittentts-mini-lt.wav](./review-audio/original-kittentts-mini-lt.wav)
+- [original-example-output.wav](./review-audio/original-example-output.wav)
+
 ---
 
 ## Architecture
 
-```
+```text
 src/
 ├── kitten-tts.js    Main class: from_pretrained, generate, stream
 ├── preprocess.js    Number/currency/time text normalization

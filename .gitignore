@@ -1,5 +1,11 @@
 node_modules/
 .env
+.venv/
+.venv-bench/
+.python-bench/
+.benchmarks/
+__pycache__/
+*.py[cod]
 *.wav
 *.onnx
 *.npz

@@ -18,30 +18,53 @@
   <br><br>
   <label>Voice:
     <select id="voice">
-      <option value="Bella">Bella (female)</option>
-      <option value="Luna">Luna (female)</option>
-      <option value="Leo" selected>Leo (male)</option>
       <option value="Jasper">Jasper (male)</option>
+      <option value="Luna">Luna (female)</option>
+      <option value="Bruno" selected>Bruno (male)</option>
+      <option value="Bella">Bella (female)</option>
+      <option value="Leo">Leo (male)</option>
     </select>
   </label>
   &nbsp;
   <button id="btn">Speak</button>
+  <button id="askBtn">Ask + Speak (tiny LLM)</button>
   <div id="status">Loading model…</div>
+  <p id="llmOut" style="font-size:13px;color:#444;line-height:1.5;"></p>
   <audio id="player" controls></audio>
 
   <script type="module">
     import { KittenTTS } from '../src/index.js';
 
     let tts;
+    let textGen;
     const statusEl = document.getElementById('status');
     const btn = document.getElementById('btn');
+    const askBtn = document.getElementById('askBtn');
+    const llmOutEl = document.getElementById('llmOut');
+
+    async function synthesizeAndPlay(text, voice) {
+      const audio = await tts.generate(text, { voice });
+      const blob = audio.toBlob();
+      document.getElementById('player').src = URL.createObjectURL(blob);
+      return audio;
+    }
+
+    async function loadTinyLlmIfNeeded() {
+      if (textGen) return textGen;
+      statusEl.textContent = 'Loading tiny LLM… (first time only)';
+      const { pipeline } = await import('https://esm.sh/@xenova/transformers@2.17.2');
+      textGen = await pipeline('text-generation', 'Xenova/distilgpt2');
+      return textGen;
+    }
 
     async function init() {
       btn.disabled = true;
+      askBtn.disabled = true;
       try {
         tts = await KittenTTS.from_pretrained('KittenML/kitten-tts-nano-0.8');
-        statusEl.textContent = 'Model loaded. Click Speak!';
+        statusEl.textContent = 'TTS ready. Click Speak or Ask + Speak!';
         btn.disabled = false;
+        askBtn.disabled = false;
       } catch (e) {
         statusEl.textContent = 'Error loading model: ' + e.message;
         console.error(e);
@@ -53,17 +76,56 @@
       const voice = document.getElementById('voice').value;
       if (!text || !tts) return;
       btn.disabled = true;
+      askBtn.disabled = true;
+      llmOutEl.textContent = '';
       statusEl.textContent = 'Synthesizing…';
       try {
-        const audio = await tts.generate(text, { voice });
-        const blob = audio.toBlob();
-        document.getElementById('player').src = URL.createObjectURL(blob);
+        const audio = await synthesizeAndPlay(text, voice);
         statusEl.textContent = `Done! ${audio.duration.toFixed(1)}s`;
       } catch (e) {
         statusEl.textContent = 'Error: ' + e.message;
         console.error(e);
       } finally {
         btn.disabled = false;
+        askBtn.disabled = false;
+      }
+    });
+
+    askBtn.addEventListener('click', async () => {
+      const prompt = document.getElementById('text').value.trim();
+      const voice = document.getElementById('voice').value;
+      if (!prompt || !tts) return;
+      btn.disabled = true;
+      askBtn.disabled = true;
+      llmOutEl.textContent = '';
+      statusEl.textContent = 'Generating short answer with tiny LLM…';
+
+      try {
+        const generator = await loadTinyLlmIfNeeded();
+        const output = await generator(`Q: ${prompt}\nA:`, {
+          max_new_tokens: 36,
+          do_sample: true,
+          temperature: 0.8,
+          top_p: 0.9
+        });
+
+        const raw = output?.[0]?.generated_text || '';
+        let reply = raw.split('\nA:').pop()?.trim() || raw.trim();
+        if (!reply) reply = 'I do not know yet, but I can help with a short answer.';
+        const stopAt = reply.search(/[.!?](\s|$)/);
+        if (stopAt !== -1) reply = reply.slice(0, stopAt + 1);
+        reply = reply.slice(0, 220);
+
+        llmOutEl.textContent = `LLM reply: ${reply}`;
+        statusEl.textContent = 'Speaking LLM reply…';
+        const audio = await synthesizeAndPlay(reply, voice);
+        statusEl.textContent = `Done! ${audio.duration.toFixed(1)}s`;
+      } catch (e) {
+        statusEl.textContent = 'Error: ' + e.message;
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        askBtn.disabled = false;
       }
     });
 

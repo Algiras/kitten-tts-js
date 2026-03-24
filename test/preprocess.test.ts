@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { test } from 'node:test';
-import { TextPreprocessor } from '../src/preprocess.js';
+import { TextPreprocessor } from '../src/preprocess.ts';
 
 const p = new TextPreprocessor({ lowercase: false });
 

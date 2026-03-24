@@ -1,0 +1,584 @@
+{
+  "generated_at": "2026-03-24T13:35:20.115Z",
+  "text": "Hello from kitten tts node permutation generation. This sample is used for speed and runtime comparison.",
+  "voice": "Leo",
+  "permutations": [
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 424.68,
+      "gen_ms": 886.02,
+      "duration_s": 15.033,
+      "ms_per_1s_audio": 58.94,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-auto-speed-0.80-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 424.68,
+      "gen_ms": 853.77,
+      "duration_s": 15.033,
+      "ms_per_1s_audio": 56.79,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-auto-speed-0.80-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 424.68,
+      "gen_ms": 744.23,
+      "duration_s": 11.908,
+      "ms_per_1s_audio": 62.5,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-auto-speed-1.00-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 424.68,
+      "gen_ms": 509.35,
+      "duration_s": 11.908,
+      "ms_per_1s_audio": 42.77,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-auto-speed-1.00-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 424.68,
+      "gen_ms": 423.42,
+      "duration_s": 9.708,
+      "ms_per_1s_audio": 43.62,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-auto-speed-1.20-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 424.68,
+      "gen_ms": 430.39,
+      "duration_s": 9.708,
+      "ms_per_1s_audio": 44.33,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-auto-speed-1.20-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 283.25,
+      "gen_ms": 777.65,
+      "duration_s": 15.033,
+      "ms_per_1s_audio": 51.73,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-cpu-speed-0.80-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 283.25,
+      "gen_ms": 787.26,
+      "duration_s": 15.033,
+      "ms_per_1s_audio": 52.37,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-cpu-speed-0.80-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 283.25,
+      "gen_ms": 544.83,
+      "duration_s": 11.908,
+      "ms_per_1s_audio": 45.75,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-cpu-speed-1.00-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 283.25,
+      "gen_ms": 760.5,
+      "duration_s": 11.908,
+      "ms_per_1s_audio": 63.86,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-cpu-speed-1.00-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 283.25,
+      "gen_ms": 496.5,
+      "duration_s": 9.708,
+      "ms_per_1s_audio": 51.14,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-cpu-speed-1.20-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-nano-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 283.25,
+      "gen_ms": 480.74,
+      "duration_s": 9.708,
+      "ms_per_1s_audio": 49.52,
+      "file": "review-audio/kitten-node-permutations/kitten-nano-runtime-cpu-speed-1.20-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 419.47,
+      "gen_ms": 1987.29,
+      "duration_s": 15.483,
+      "ms_per_1s_audio": 128.35,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-auto-speed-0.80-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 419.47,
+      "gen_ms": 1857.44,
+      "duration_s": 15.483,
+      "ms_per_1s_audio": 119.97,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-auto-speed-0.80-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 419.47,
+      "gen_ms": 1484.84,
+      "duration_s": 12.208,
+      "ms_per_1s_audio": 121.63,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-auto-speed-1.00-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 419.47,
+      "gen_ms": 1513.65,
+      "duration_s": 12.208,
+      "ms_per_1s_audio": 123.99,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-auto-speed-1.00-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 419.47,
+      "gen_ms": 1319.36,
+      "duration_s": 10.233,
+      "ms_per_1s_audio": 128.93,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-auto-speed-1.20-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 419.47,
+      "gen_ms": 1345.2,
+      "duration_s": 10.233,
+      "ms_per_1s_audio": 131.46,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-auto-speed-1.20-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 427.78,
+      "gen_ms": 1982.27,
+      "duration_s": 15.483,
+      "ms_per_1s_audio": 128.03,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-cpu-speed-0.80-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 427.78,
+      "gen_ms": 1833.23,
+      "duration_s": 15.483,
+      "ms_per_1s_audio": 118.4,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-cpu-speed-0.80-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 427.78,
+      "gen_ms": 1407.07,
+      "duration_s": 12.208,
+      "ms_per_1s_audio": 115.26,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-cpu-speed-1.00-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 427.78,
+      "gen_ms": 1369.35,
+      "duration_s": 12.208,
+      "ms_per_1s_audio": 112.17,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-cpu-speed-1.00-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 427.78,
+      "gen_ms": 1331.01,
+      "duration_s": 10.233,
+      "ms_per_1s_audio": 130.07,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-cpu-speed-1.20-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-micro-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 427.78,
+      "gen_ms": 1161.71,
+      "duration_s": 10.233,
+      "ms_per_1s_audio": 113.53,
+      "file": "review-audio/kitten-node-permutations/kitten-micro-runtime-cpu-speed-1.20-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 433.8,
+      "gen_ms": 2969.65,
+      "duration_s": 12.833,
+      "ms_per_1s_audio": 231.41,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-auto-speed-0.80-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 433.8,
+      "gen_ms": 2813.96,
+      "duration_s": 12.833,
+      "ms_per_1s_audio": 219.28,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-auto-speed-0.80-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 433.8,
+      "gen_ms": 2297.67,
+      "duration_s": 10.158,
+      "ms_per_1s_audio": 226.19,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-auto-speed-1.00-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 433.8,
+      "gen_ms": 2452.06,
+      "duration_s": 10.158,
+      "ms_per_1s_audio": 241.39,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-auto-speed-1.00-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 433.8,
+      "gen_ms": 1965.4,
+      "duration_s": 8.583,
+      "ms_per_1s_audio": 228.99,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-auto-speed-1.20-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "auto",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 433.8,
+      "gen_ms": 2039.32,
+      "duration_s": 8.583,
+      "ms_per_1s_audio": 237.6,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-auto-speed-1.20-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 386.94,
+      "gen_ms": 3185.7,
+      "duration_s": 12.833,
+      "ms_per_1s_audio": 248.24,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-cpu-speed-0.80-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 0.8,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 386.94,
+      "gen_ms": 2964.62,
+      "duration_s": 12.833,
+      "ms_per_1s_audio": 231.02,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-cpu-speed-0.80-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 386.94,
+      "gen_ms": 2324.14,
+      "duration_s": 10.158,
+      "ms_per_1s_audio": 228.8,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-cpu-speed-1.00-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 386.94,
+      "gen_ms": 2392.67,
+      "duration_s": 10.158,
+      "ms_per_1s_audio": 235.55,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-cpu-speed-1.00-clean-on-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": false,
+      "voice": "Leo",
+      "load_ms": 386.94,
+      "gen_ms": 2069.78,
+      "duration_s": 8.583,
+      "ms_per_1s_audio": 241.15,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-cpu-speed-1.20-clean-off-voice-Leo.wav"
+    },
+    {
+      "modelId": "KittenML/kitten-tts-mini-0.8",
+      "runtime_requested": "cpu",
+      "runtime_actual": "cpu",
+      "execution_providers": [
+        "cpu"
+      ],
+      "speed": 1.2,
+      "clean": true,
+      "voice": "Leo",
+      "load_ms": 386.94,
+      "gen_ms": 2026.82,
+      "duration_s": 8.583,
+      "ms_per_1s_audio": 236.14,
+      "file": "review-audio/kitten-node-permutations/kitten-mini-runtime-cpu-speed-1.20-clean-on-voice-Leo.wav"
+    }
+  ],
+  "errors": []
+}

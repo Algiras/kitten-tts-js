@@ -1,0 +1,531 @@
+{
+  "generated_at": "2026-03-24T13:33:08.975Z",
+  "benchmark_name": "multi-model-node-cpu",
+  "voice": "Leo",
+  "workloads": [
+    {
+      "key": "short",
+      "label": "Short prompts",
+      "texts": [
+        "Hello from quick bench.",
+        "This is a slightly longer sentence to evaluate text to speech generation speed on a local CPU machine."
+      ],
+      "notes": "Legacy short workload used by the earlier docs benchmark."
+    },
+    {
+      "key": "long",
+      "label": "Long prompt batch",
+      "texts": [
+        "KittenTTS is running on a local Apple Silicon machine, and this benchmark is intended to measure steady state synthesis throughput rather than a single quick demo clip.",
+        "The longer workload helps reveal whether model setup costs are eventually amortized once the model is already loaded and the generator is producing more audio continuously.",
+        "This longer pass is intended to expose steady-state throughput on the CPU path once one-time startup overhead matters less than raw synthesis speed."
+      ],
+      "notes": "Longer batch intended to better amortize setup overhead and expose steady-state CPU throughput."
+    }
+  ],
+  "stat_options": [
+    {
+      "key": "median",
+      "label": "Median"
+    },
+    {
+      "key": "p90",
+      "label": "P90"
+    }
+  ],
+  "default_model_key": "nano",
+  "default_workload_key": "long",
+  "default_stat_key": "median",
+  "benchmark_config": {
+    "warmup_runs": 1,
+    "measured_runs": 3,
+    "profile": "docs",
+    "interpretation": "Lower is better. Use median for central tendency and p90 to inspect slower tail runs."
+  },
+  "metric": "ms_per_1s_audio",
+  "interpretation": "Lower is better. The throughput chart shows the selected statistic from repeated steady-state runs after warm-up.",
+  "load_metric": "load_ms",
+  "load_interpretation": "Lower is better. This is cold-start model/session initialization latency.",
+  "models": [
+    {
+      "key": "nano",
+      "label": "Nano FP32",
+      "node_model": "KittenML/kitten-tts-nano-0.8-fp32",
+      "approaches": [
+        {
+          "key": "node-cpu",
+          "label": "Node CPU",
+          "runtime": "node-cpu",
+          "source": "fresh-local",
+          "model": "KittenML/kitten-tts-nano-0.8-fp32",
+          "model_short": "nano",
+          "load_ms": 1216.1,
+          "runtime_requested": "cpu",
+          "runtime_actual": "cpu",
+          "execution_providers": [
+            "cpu"
+          ],
+          "notes": "Direct Node runtime on CPU.",
+          "workloads": [
+            {
+              "key": "short",
+              "label": "Short prompts",
+              "notes": "Legacy short workload used by the earlier docs benchmark.",
+              "texts": [
+                "Hello from quick bench.",
+                "This is a slightly longer sentence to evaluate text to speech generation speed on a local CPU machine."
+              ],
+              "warmup_runs": 1,
+              "measured_runs": 3,
+              "warmup": {
+                "total_gen_ms": 7516.4,
+                "total_audio_s": 14.483,
+                "ms_per_1s_audio": 518.97,
+                "rtf": 1.93
+              },
+              "runs": [
+                {
+                  "iteration": 1,
+                  "total_gen_ms": 4816.7,
+                  "total_audio_s": 14.483,
+                  "ms_per_1s_audio": 332.57,
+                  "rtf": 3.01
+                },
+                {
+                  "iteration": 2,
+                  "total_gen_ms": 5239.5,
+                  "total_audio_s": 14.483,
+                  "ms_per_1s_audio": 361.76,
+                  "rtf": 2.76
+                },
+                {
+                  "iteration": 3,
+                  "total_gen_ms": 5094.4,
+                  "total_audio_s": 14.483,
+                  "ms_per_1s_audio": 351.74,
+                  "rtf": 2.84
+                }
+              ],
+              "summary": {
+                "total_audio_s_per_run": 14.483,
+                "total_gen_ms": {
+                  "median": 5094.4,
+                  "p90": 5239.5,
+                  "min": 4816.7,
+                  "max": 5239.5
+                },
+                "ms_per_1s_audio": {
+                  "median": 351.74,
+                  "p90": 361.76,
+                  "min": 332.57,
+                  "max": 361.76
+                },
+                "rtf": {
+                  "median": 2.84,
+                  "p90": 3.01,
+                  "min": 2.76,
+                  "max": 3.01
+                }
+              }
+            },
+            {
+              "key": "long",
+              "label": "Long prompt batch",
+              "notes": "Longer batch intended to better amortize setup overhead and expose steady-state CPU throughput.",
+              "texts": [
+                "KittenTTS is running on a local Apple Silicon machine, and this benchmark is intended to measure steady state synthesis throughput rather than a single quick demo clip.",
+                "The longer workload helps reveal whether model setup costs are eventually amortized once the model is already loaded and the generator is producing more audio continuously.",
+                "This longer pass is intended to expose steady-state throughput on the CPU path once one-time startup overhead matters less than raw synthesis speed."
+              ],
+              "warmup_runs": 1,
+              "measured_runs": 3,
+              "warmup": {
+                "total_gen_ms": 15774.3,
+                "total_audio_s": 47.85,
+                "ms_per_1s_audio": 329.66,
+                "rtf": 3.03
+              },
+              "runs": [
+                {
+                  "iteration": 1,
+                  "total_gen_ms": 13969.8,
+                  "total_audio_s": 47.85,
+                  "ms_per_1s_audio": 291.95,
+                  "rtf": 3.43
+                },
+                {
+                  "iteration": 2,
+                  "total_gen_ms": 9496.6,
+                  "total_audio_s": 47.85,
+                  "ms_per_1s_audio": 198.47,
+                  "rtf": 5.04
+                },
+                {
+                  "iteration": 3,
+                  "total_gen_ms": 14162.7,
+                  "total_audio_s": 47.85,
+                  "ms_per_1s_audio": 295.98,
+                  "rtf": 3.38
+                }
+              ],
+              "summary": {
+                "total_audio_s_per_run": 47.85,
+                "total_gen_ms": {
+                  "median": 13969.8,
+                  "p90": 14162.7,
+                  "min": 9496.6,
+                  "max": 14162.7
+                },
+                "ms_per_1s_audio": {
+                  "median": 291.95,
+                  "p90": 295.98,
+                  "min": 198.47,
+                  "max": 295.98
+                },
+                "rtf": {
+                  "median": 3.43,
+                  "p90": 5.04,
+                  "min": 3.38,
+                  "max": 5.04
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "highlights": {
+        "speed_by_workload_stat": {
+          "short": {
+            "median": [],
+            "p90": []
+          },
+          "long": {
+            "median": [],
+            "p90": []
+          }
+        },
+        "load": []
+      }
+    },
+    {
+      "key": "micro",
+      "label": "Micro INT8",
+      "node_model": "KittenML/kitten-tts-micro-0.8",
+      "approaches": [
+        {
+          "key": "node-cpu",
+          "label": "Node CPU",
+          "runtime": "node-cpu",
+          "source": "fresh-local",
+          "model": "KittenML/kitten-tts-micro-0.8",
+          "model_short": "micro",
+          "load_ms": 2669.6,
+          "runtime_requested": "cpu",
+          "runtime_actual": "cpu",
+          "execution_providers": [
+            "cpu"
+          ],
+          "notes": "Direct Node runtime on CPU.",
+          "workloads": [
+            {
+              "key": "short",
+              "label": "Short prompts",
+              "notes": "Legacy short workload used by the earlier docs benchmark.",
+              "texts": [
+                "Hello from quick bench.",
+                "This is a slightly longer sentence to evaluate text to speech generation speed on a local CPU machine."
+              ],
+              "warmup_runs": 1,
+              "measured_runs": 3,
+              "warmup": {
+                "total_gen_ms": 8177.6,
+                "total_audio_s": 14.958,
+                "ms_per_1s_audio": 546.69,
+                "rtf": 1.83
+              },
+              "runs": [
+                {
+                  "iteration": 1,
+                  "total_gen_ms": 5738.3,
+                  "total_audio_s": 14.958,
+                  "ms_per_1s_audio": 383.62,
+                  "rtf": 2.61
+                },
+                {
+                  "iteration": 2,
+                  "total_gen_ms": 7844.3,
+                  "total_audio_s": 14.958,
+                  "ms_per_1s_audio": 524.41,
+                  "rtf": 1.91
+                },
+                {
+                  "iteration": 3,
+                  "total_gen_ms": 8938.2,
+                  "total_audio_s": 14.958,
+                  "ms_per_1s_audio": 597.54,
+                  "rtf": 1.67
+                }
+              ],
+              "summary": {
+                "total_audio_s_per_run": 14.958,
+                "total_gen_ms": {
+                  "median": 7844.3,
+                  "p90": 8938.2,
+                  "min": 5738.3,
+                  "max": 8938.2
+                },
+                "ms_per_1s_audio": {
+                  "median": 524.41,
+                  "p90": 597.54,
+                  "min": 383.62,
+                  "max": 597.54
+                },
+                "rtf": {
+                  "median": 1.91,
+                  "p90": 2.61,
+                  "min": 1.67,
+                  "max": 2.61
+                }
+              }
+            },
+            {
+              "key": "long",
+              "label": "Long prompt batch",
+              "notes": "Longer batch intended to better amortize setup overhead and expose steady-state CPU throughput.",
+              "texts": [
+                "KittenTTS is running on a local Apple Silicon machine, and this benchmark is intended to measure steady state synthesis throughput rather than a single quick demo clip.",
+                "The longer workload helps reveal whether model setup costs are eventually amortized once the model is already loaded and the generator is producing more audio continuously.",
+                "This longer pass is intended to expose steady-state throughput on the CPU path once one-time startup overhead matters less than raw synthesis speed."
+              ],
+              "warmup_runs": 1,
+              "measured_runs": 3,
+              "warmup": {
+                "total_gen_ms": 31380.7,
+                "total_audio_s": 48.05,
+                "ms_per_1s_audio": 653.08,
+                "rtf": 1.53
+              },
+              "runs": [
+                {
+                  "iteration": 1,
+                  "total_gen_ms": 30515.6,
+                  "total_audio_s": 48.05,
+                  "ms_per_1s_audio": 635.08,
+                  "rtf": 1.57
+                },
+                {
+                  "iteration": 2,
+                  "total_gen_ms": 22045.6,
+                  "total_audio_s": 48.05,
+                  "ms_per_1s_audio": 458.81,
+                  "rtf": 2.18
+                },
+                {
+                  "iteration": 3,
+                  "total_gen_ms": 20843.1,
+                  "total_audio_s": 48.05,
+                  "ms_per_1s_audio": 433.78,
+                  "rtf": 2.31
+                }
+              ],
+              "summary": {
+                "total_audio_s_per_run": 48.05,
+                "total_gen_ms": {
+                  "median": 22045.6,
+                  "p90": 30515.6,
+                  "min": 20843.1,
+                  "max": 30515.6
+                },
+                "ms_per_1s_audio": {
+                  "median": 458.81,
+                  "p90": 635.08,
+                  "min": 433.78,
+                  "max": 635.08
+                },
+                "rtf": {
+                  "median": 2.18,
+                  "p90": 2.31,
+                  "min": 1.57,
+                  "max": 2.31
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "highlights": {
+        "speed_by_workload_stat": {
+          "short": {
+            "median": [],
+            "p90": []
+          },
+          "long": {
+            "median": [],
+            "p90": []
+          }
+        },
+        "load": []
+      }
+    },
+    {
+      "key": "mini",
+      "label": "Mini INT8",
+      "node_model": "KittenML/kitten-tts-mini-0.8",
+      "approaches": [
+        {
+          "key": "node-cpu",
+          "label": "Node CPU",
+          "runtime": "node-cpu",
+          "source": "fresh-local",
+          "model": "KittenML/kitten-tts-mini-0.8",
+          "model_short": "mini",
+          "load_ms": 1433.1,
+          "runtime_requested": "cpu",
+          "runtime_actual": "cpu",
+          "execution_providers": [
+            "cpu"
+          ],
+          "notes": "Direct Node runtime on CPU.",
+          "workloads": [
+            {
+              "key": "short",
+              "label": "Short prompts",
+              "notes": "Legacy short workload used by the earlier docs benchmark.",
+              "texts": [
+                "Hello from quick bench.",
+                "This is a slightly longer sentence to evaluate text to speech generation speed on a local CPU machine."
+              ],
+              "warmup_runs": 1,
+              "measured_runs": 3,
+              "warmup": {
+                "total_gen_ms": 10113,
+                "total_audio_s": 12.683,
+                "ms_per_1s_audio": 797.35,
+                "rtf": 1.25
+              },
+              "runs": [
+                {
+                  "iteration": 1,
+                  "total_gen_ms": 10817,
+                  "total_audio_s": 12.683,
+                  "ms_per_1s_audio": 852.85,
+                  "rtf": 1.17
+                },
+                {
+                  "iteration": 2,
+                  "total_gen_ms": 11179.7,
+                  "total_audio_s": 12.683,
+                  "ms_per_1s_audio": 881.45,
+                  "rtf": 1.13
+                },
+                {
+                  "iteration": 3,
+                  "total_gen_ms": 10781.5,
+                  "total_audio_s": 12.683,
+                  "ms_per_1s_audio": 850.05,
+                  "rtf": 1.18
+                }
+              ],
+              "summary": {
+                "total_audio_s_per_run": 12.683,
+                "total_gen_ms": {
+                  "median": 10817,
+                  "p90": 11179.7,
+                  "min": 10781.5,
+                  "max": 11179.7
+                },
+                "ms_per_1s_audio": {
+                  "median": 852.85,
+                  "p90": 881.45,
+                  "min": 850.05,
+                  "max": 881.45
+                },
+                "rtf": {
+                  "median": 1.17,
+                  "p90": 1.18,
+                  "min": 1.13,
+                  "max": 1.18
+                }
+              }
+            },
+            {
+              "key": "long",
+              "label": "Long prompt batch",
+              "notes": "Longer batch intended to better amortize setup overhead and expose steady-state CPU throughput.",
+              "texts": [
+                "KittenTTS is running on a local Apple Silicon machine, and this benchmark is intended to measure steady state synthesis throughput rather than a single quick demo clip.",
+                "The longer workload helps reveal whether model setup costs are eventually amortized once the model is already loaded and the generator is producing more audio continuously.",
+                "This longer pass is intended to expose steady-state throughput on the CPU path once one-time startup overhead matters less than raw synthesis speed."
+              ],
+              "warmup_runs": 1,
+              "measured_runs": 3,
+              "warmup": {
+                "total_gen_ms": 33629.4,
+                "total_audio_s": 41.675,
+                "ms_per_1s_audio": 806.94,
+                "rtf": 1.24
+              },
+              "runs": [
+                {
+                  "iteration": 1,
+                  "total_gen_ms": 24541.2,
+                  "total_audio_s": 41.675,
+                  "ms_per_1s_audio": 588.87,
+                  "rtf": 1.7
+                },
+                {
+                  "iteration": 2,
+                  "total_gen_ms": 23542.7,
+                  "total_audio_s": 41.675,
+                  "ms_per_1s_audio": 564.91,
+                  "rtf": 1.77
+                },
+                {
+                  "iteration": 3,
+                  "total_gen_ms": 24750,
+                  "total_audio_s": 41.675,
+                  "ms_per_1s_audio": 593.88,
+                  "rtf": 1.68
+                }
+              ],
+              "summary": {
+                "total_audio_s_per_run": 41.675,
+                "total_gen_ms": {
+                  "median": 24541.2,
+                  "p90": 24750,
+                  "min": 23542.7,
+                  "max": 24750
+                },
+                "ms_per_1s_audio": {
+                  "median": 588.87,
+                  "p90": 593.88,
+                  "min": 564.91,
+                  "max": 593.88
+                },
+                "rtf": {
+                  "median": 1.7,
+                  "p90": 1.77,
+                  "min": 1.68,
+                  "max": 1.77
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "highlights": {
+        "speed_by_workload_stat": {
+          "short": {
+            "median": [],
+            "p90": []
+          },
+          "long": {
+            "median": [],
+            "p90": []
+          }
+        },
+        "load": []
+      }
+    }
+  ]
+}

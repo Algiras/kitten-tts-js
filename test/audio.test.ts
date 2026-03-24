@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { test } from 'node:test';
-import { RawAudio, encodeWav } from '../src/audio.js';
+import { RawAudio, encodeWav } from '../src/audio.ts';
 
 test('encodeWav produces a valid RIFF header', () => {
   const samples = new Float32Array([0, 0.5, -0.5, 1.0, -1.0]);

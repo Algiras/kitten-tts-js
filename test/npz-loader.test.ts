@@ -4,10 +4,10 @@
 import { strict as assert } from 'assert';
 import { test } from 'node:test';
 import JSZip from 'jszip';
-import { loadNpz } from '../src/npz-loader.js';
+import { loadNpz } from '../src/npz-loader.ts';
 
 /** Build a minimal .npy buffer for a float32 array with given shape. */
-function makeNpy(data, shape) {
+function makeNpy(data: number[], shape: number[]): ArrayBuffer {
   const dtype = '<f4';
   const header = `{'descr': '${dtype}', 'fortran_order': False, 'shape': (${shape.join(', ')},), }`;
   const headerPadded = header.padEnd(Math.ceil((header.length + 1) / 64) * 64 - 1, ' ') + '\n';
@@ -32,7 +32,7 @@ function makeNpy(data, shape) {
   return buf;
 }
 
-async function makeNpz(entries) {
+async function makeNpz(entries: Record<string, { data: number[]; shape: number[] }>): Promise<ArrayBuffer> {
   const zip = new JSZip();
   for (const [key, { data, shape }] of Object.entries(entries)) {
     const npy = makeNpy(data, shape);
