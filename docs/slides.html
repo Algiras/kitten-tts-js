@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KittenTTS JS — Slides + Assistant Lab</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --ink: #1f1a17;
+      --muted: #64594f;
+      --panel: rgba(255, 250, 242, 0.92);
+      --panel-strong: #fffaf3;
+      --line: #d8cabb;
+      --accent: #d0632f;
+      --accent-deep: #9e4320;
+      --accent-soft: #f7c8af;
+      --success: #217a4b;
+      --warning: #8f5b16;
+      --shadow: 0 18px 50px rgba(76, 43, 22, 0.12);
+      --radius: 22px;
+      --mono: "SFMono-Regular", ui-monospace, monospace;
+      --sans: "Avenir Next", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at top left, rgba(208, 99, 47, 0.16), transparent 24%),
+        radial-gradient(circle at 80% 10%, rgba(72, 142, 255, 0.12), transparent 20%),
+        linear-gradient(180deg, #f8f3eb 0%, #f0e7dc 100%);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .shell {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      background: rgba(255, 252, 247, 0.84);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(216, 202, 187, 0.9);
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+    }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--accent-deep);
+      font-weight: 700;
+    }
+
+    .title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 280px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: -0.03em;
+    }
+
+    .title-wrap p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .status-strip {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 0.45rem 0.72rem;
+      border-radius: 999px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .chip strong {
+      color: var(--ink);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.9fr);
+      gap: 18px;
+      min-height: calc(100vh - 150px);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(216, 202, 187, 0.92);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .slides-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 250px;
+    }
+
+    .stage-wrap {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .stage-card {
+      min-height: 560px;
+      border-radius: calc(var(--radius) - 6px);
+      padding: 28px;
+      color: #fff7ef;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.18), transparent 18%),
+        linear-gradient(145deg, #39241b 0%, #24120f 40%, #6b2d16 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stage-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -60px auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(255, 183, 136, 0.14);
+      filter: blur(6px);
+    }
+
+    .stage-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stage-kicker {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: #ffc3a6;
+      font-weight: 700;
+    }
+
+    .stage-index {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: rgba(255, 247, 239, 0.76);
+    }
+
+    .stage-main {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stage-main h2 {
+      margin: 0;
+      font-size: clamp(2rem, 3vw, 3.5rem);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+      max-width: 12ch;
+    }
+
+    .lede {
+      margin: 0;
+      max-width: 58ch;
+      color: rgba(255, 247, 239, 0.84);
+      font-size: 1.03rem;
+      line-height: 1.5;
+    }
+
+    .bullets {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+      max-width: 60ch;
+    }
+
+    .bullets li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 1rem;
+      color: rgba(255, 247, 239, 0.92);
+      line-height: 1.45;
+    }
+
+    .bullets li::before {
+      content: "•";
+      color: #ffb68b;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .note-band {
+      position: relative;
+      z-index: 1;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 247, 239, 0.16);
+      color: rgba(255, 247, 239, 0.72);
+      font-size: 0.94rem;
+      line-height: 1.5;
+    }
+
+    .slide-controls,
+    .toolbar,
+    .tts-controls,
+    .stt-controls,
+    .assistant-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button,
+    select,
+    textarea,
+    input {
+      font: inherit;
+    }
+
+    button,
+    .button-link {
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      color: var(--ink);
+      border-radius: 14px;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+      text-decoration: none;
+    }
+
+    button:hover,
+    .button-link:hover {
+      transform: translateY(-1px);
+      border-color: #b99d87;
+    }
+
+    button.primary {
+      background: linear-gradient(180deg, #de7543, #cb5d2b);
+      border-color: #bf5427;
+      color: #fff8f2;
+    }
+
+    button.secondary {
+      background: rgba(255, 248, 240, 0.6);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      transform: none;
+    }
+
+    .toolbar {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .progress {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .speaker-box {
+      background: rgba(255, 251, 246, 0.95);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .speaker-box p,
+    .stack p,
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .thumbs {
+      padding: 20px 18px;
+      background: rgba(246, 239, 230, 0.86);
+      border-left: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+
+    .thumb {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+      background: rgba(255, 250, 242, 0.8);
+      display: grid;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .thumb.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(208, 99, 47, 0.16);
+    }
+
+    .thumb strong {
+      font-size: 0.95rem;
+    }
+
+    .thumb span {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .assistant-panel {
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      min-height: 0;
+    }
+
+    .assistant-head,
+    .assistant-foot,
+    .stack {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .assistant-foot {
+      border-top: 1px solid var(--line);
+      border-bottom: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .assistant-head {
+      display: grid;
+      gap: 8px;
+    }
+
+    .assistant-head h3 {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: -0.03em;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    select,
+    textarea,
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel-strong);
+      color: var(--ink);
+      padding: 0.78rem 0.92rem;
+      outline: none;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 92px;
+      line-height: 1.5;
+    }
+
+    .conversation {
+      min-height: 0;
+      overflow: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(255, 252, 248, 0.9), rgba(247, 240, 232, 0.75));
+    }
+
+    .bubble {
+      max-width: 92%;
+      padding: 14px 16px;
+      border-radius: 18px;
+      line-height: 1.5;
+      box-shadow: 0 10px 28px rgba(82, 50, 29, 0.06);
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+      background: #f4d5c3;
+      border-bottom-right-radius: 6px;
+    }
+
+    .bubble.assistant {
+      align-self: flex-start;
+      background: #fffaf3;
+      border: 1px solid var(--line);
+      border-bottom-left-radius: 6px;
+    }
+
+    .bubble.system {
+      align-self: center;
+      background: rgba(255, 248, 238, 0.86);
+      border: 1px dashed #c8b19d;
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .logline {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .status-box {
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: #fff7ef;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .status-box.success {
+      border-color: rgba(33, 122, 75, 0.25);
+      color: var(--success);
+    }
+
+    .status-box.warning {
+      border-color: rgba(143, 91, 22, 0.24);
+      color: var(--warning);
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .slides-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .thumbs {
+        border-left: none;
+        border-top: 1px solid var(--line);
+        flex-direction: row;
+      }
+
+      .thumb {
+        min-width: 220px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        padding: 14px;
+      }
+
+      .topbar {
+        border-radius: 26px;
+      }
+
+      .stage-card {
+        min-height: 440px;
+        padding: 22px;
+      }
+
+      .grid-two {
+        grid-template-columns: 1fr;
+      }
+
+      .status-strip {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <div class="title-wrap">
+        <div class="eyebrow">Slides Assistant Lab</div>
+        <h1>Side-by-side slides with browser narration, STT, and an LLM hook</h1>
+        <p>Prototype branch for a presenter deck that can talk, listen, and answer with slide context.</p>
+      </div>
+      <div class="status-strip">
+        <div class="chip"><strong>TTS</strong> <span id="tts-chip">idle</span></div>
+        <div class="chip"><strong>STT</strong> <span id="stt-chip">checking</span></div>
+        <div class="chip"><strong>WebGPU</strong> <span id="gpu-chip">checking</span></div>
+        <a class="button-link" href="./index.html">Back to demo</a>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <section class="panel slides-panel">
+        <div class="stage-wrap">
+          <div class="toolbar">
+            <div class="progress" id="progress-text">Slide 1 / 5</div>
+            <div class="slide-controls">
+              <button id="prev-slide" class="secondary">Previous</button>
+              <button id="next-slide" class="primary">Next</button>
+            </div>
+          </div>
+
+          <article class="stage-card">
+            <div class="stage-meta">
+              <div class="stage-kicker" id="slide-kicker"></div>
+              <div class="stage-index" id="slide-index"></div>
+            </div>
+
+            <div class="stage-main">
+              <h2 id="slide-title"></h2>
+              <p class="lede" id="slide-lede"></p>
+              <ul class="bullets" id="slide-bullets"></ul>
+            </div>
+
+            <div class="note-band" id="slide-note-preview"></div>
+          </article>
+
+          <div class="speaker-box">
+            <div class="section-label">Presenter Notes</div>
+            <p id="speaker-notes"></p>
+          </div>
+        </div>
+
+        <aside class="thumbs" id="thumbs"></aside>
+      </section>
+
+      <section class="panel assistant-panel">
+        <div class="assistant-head">
+          <h3>Assistant Pane</h3>
+          <p class="hint">Uses the active slide as context. Narration runs through the existing KittenTTS worker. STT uses the browser speech API when available. LLM responses can be delegated to a future WebGPU adapter.</p>
+        </div>
+
+        <div class="stack">
+          <div class="grid-two">
+            <label>
+              Voice
+              <select id="voice-select">
+                <option>Bella</option>
+                <option>Luna</option>
+                <option>Rosie</option>
+                <option>Kiki</option>
+                <option selected>Leo</option>
+                <option>Jasper</option>
+                <option>Bruno</option>
+                <option>Hugo</option>
+              </select>
+            </label>
+            <label>
+              Runtime
+              <select id="runtime-select">
+                <option value="auto" selected>Auto</option>
+                <option value="gpu">GPU</option>
+                <option value="cpu">CPU</option>
+              </select>
+            </label>
+            <label>
+              Model
+              <select id="model-select">
+                <option value="KittenML/kitten-tts-nano-0.8-int8" selected>Nano INT8</option>
+                <option value="KittenML/kitten-tts-micro-0.8">Micro</option>
+                <option value="KittenML/kitten-tts-mini-0.8">Mini</option>
+              </select>
+            </label>
+            <label>
+              Speed
+              <select id="speed-select">
+                <option value="0.9">0.90×</option>
+                <option value="1" selected>1.00×</option>
+                <option value="1.1">1.10×</option>
+                <option value="1.2">1.20×</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="tts-controls">
+            <button id="init-tts" class="secondary">Load Narrator</button>
+            <button id="read-slide" class="primary">Read Slide</button>
+            <button id="read-notes" class="secondary">Read Notes</button>
+          </div>
+
+          <div class="stt-controls">
+            <button id="start-stt" class="secondary">Start Listening</button>
+            <button id="stop-stt" class="secondary" disabled>Stop Listening</button>
+          </div>
+        </div>
+
+        <div class="conversation" id="conversation"></div>
+
+        <div class="assistant-foot">
+          <label>
+            Transcript / prompt
+            <textarea id="prompt-input" placeholder="Ask about the current slide, or use browser STT to dictate a question."></textarea>
+          </label>
+
+          <div class="assistant-controls">
+            <button id="ask-assistant" class="primary">Ask Assistant</button>
+            <button id="suggest-question" class="secondary">Suggest a Q&amp;A</button>
+          </div>
+
+          <div class="status-box" id="assistant-status">Ready. The assistant falls back to a local slide-aware responder until a WebGPU LLM adapter is plugged in.</div>
+          <div class="footer-note">Adapter contract: assign <span class="logline">window.slideAssistantAdapter = { async respond({ slide, question, deck, useWebGPU }) }</span> to route answers to a browser LLM.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module">
+    const deck = [
+      {
+        kicker: 'Why now',
+        title: 'Turn a slide deck into a live assistant surface.',
+        lede: 'The deck should not just render static bullets. It should narrate, listen, and answer in context while the presenter stays in flow.',
+        bullets: [
+          'Slides remain the primary visual artifact.',
+          'An assistant pane handles narration, Q&A, and rehearsal prompts.',
+          'All interaction stays browser-native so demos are portable.',
+        ],
+        notes: 'Open with the idea that the presenter no longer juggles separate tabs for speech, notes, and questions. The deck becomes the interface.',
+      },
+      {
+        kicker: 'KittenTTS role',
+        title: 'KittenTTS reads either the audience slide or the private presenter notes.',
+        lede: 'The existing worker already gives us a browser-safe narration backend. We can narrate the polished slide copy or a denser speaker script.',
+        bullets: [
+          'Speaker can choose slide copy versus hidden notes.',
+          'Voice, speed, and runtime stay adjustable in the pane.',
+          'Narration is local to the browser after model load.',
+        ],
+        notes: 'This is the shortest path to something real: reuse worker.js, keep TTS out of the main thread, and surface a simple control strip for rehearsal.',
+      },
+      {
+        kicker: 'Assistant path',
+        title: 'A browser LLM should see the active slide, the full deck, and the live question.',
+        lede: 'The answer quality depends on deck context. A slide-aware adapter can summarize, expand, or challenge the current talking points.',
+        bullets: [
+          'Prefer WebGPU when the browser exposes it.',
+          'Fall back cleanly when no local model adapter is attached.',
+          'Keep the adapter boundary explicit so model choice stays swappable.',
+        ],
+        notes: 'The branch only needs the integration seam today. The actual LLM can be WebLLM, Transformers.js, or another browser-first runtime later.',
+      },
+      {
+        kicker: 'STT loop',
+        title: 'Web STT closes the rehearsal loop for spoken Q&A.',
+        lede: 'If the presenter speaks a likely audience question, the assistant can transcribe it and answer against the current slide state.',
+        bullets: [
+          'Use browser speech recognition when available.',
+          'Keep manual text entry as the universal fallback.',
+          'Store the transcript directly in the prompt box for editing.',
+        ],
+        notes: 'The important behavior is graceful degradation. STT should be additive, not a hard requirement for the deck to work.',
+      },
+      {
+        kicker: 'What this branch proves',
+        title: 'We can start with a thin, useful prototype and deepen it incrementally.',
+        lede: 'This branch is the working lab: visible slide state, narration controls, STT wiring, and an LLM adapter hook in one page.',
+        bullets: [
+          'Prototype on a dedicated branch instead of bloating the main demo.',
+          'Validate the UX before choosing the permanent model stack.',
+          'Commit to one browser page that feels like the product, not a note dump.',
+        ],
+        notes: 'End by asking which model runtime and deck format should become first-class next: Markdown slides, JSON slides, or generated slide scripts.',
+      },
+    ];
+
+    const worker = new Worker('./worker.js', { type: 'module' });
+    const pendingRequests = new Map();
+    let currentSlideIndex = 0;
+    let ttsReady = false;
+    let listening = false;
+
+    const recognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    const recognition = recognitionCtor ? new recognitionCtor() : null;
+
+    const slideKickerEl = document.getElementById('slide-kicker');
+    const slideIndexEl = document.getElementById('slide-index');
+    const slideTitleEl = document.getElementById('slide-title');
+    const slideLedeEl = document.getElementById('slide-lede');
+    const slideBulletsEl = document.getElementById('slide-bullets');
+    const slideNotePreviewEl = document.getElementById('slide-note-preview');
+    const speakerNotesEl = document.getElementById('speaker-notes');
+    const thumbsEl = document.getElementById('thumbs');
+    const progressTextEl = document.getElementById('progress-text');
+    const conversationEl = document.getElementById('conversation');
+    const promptInputEl = document.getElementById('prompt-input');
+    const assistantStatusEl = document.getElementById('assistant-status');
+    const ttsChipEl = document.getElementById('tts-chip');
+    const sttChipEl = document.getElementById('stt-chip');
+    const gpuChipEl = document.getElementById('gpu-chip');
+    const initTtsBtn = document.getElementById('init-tts');
+    const readSlideBtn = document.getElementById('read-slide');
+    const readNotesBtn = document.getElementById('read-notes');
+    const startSttBtn = document.getElementById('start-stt');
+    const stopSttBtn = document.getElementById('stop-stt');
+    const askAssistantBtn = document.getElementById('ask-assistant');
+    const suggestQuestionBtn = document.getElementById('suggest-question');
+    const voiceSelectEl = document.getElementById('voice-select');
+    const runtimeSelectEl = document.getElementById('runtime-select');
+    const modelSelectEl = document.getElementById('model-select');
+    const speedSelectEl = document.getElementById('speed-select');
+
+    worker.onmessage = (event) => {
+      const { type, id, payload } = event.data;
+      if (!pendingRequests.has(id)) return;
+      const request = pendingRequests.get(id);
+      if (type === 'error') {
+        request.reject(new Error(payload));
+      } else {
+        request.resolve(payload);
+      }
+      pendingRequests.delete(id);
+    };
+
+    function postToWorker(type, payload) {
+      return new Promise((resolve, reject) => {
+        const id = `${Date.now()}-${Math.random()}`;
+        pendingRequests.set(id, { resolve, reject });
+        worker.postMessage({ type, id, payload });
+      });
+    }
+
+    function getActiveSlide() {
+      return deck[currentSlideIndex];
+    }
+
+    function updateStatus(message, kind = '') {
+      assistantStatusEl.textContent = message;
+      assistantStatusEl.className = kind ? `status-box ${kind}` : 'status-box';
+    }
+
+    function addBubble(role, text) {
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${role}`;
+      bubble.textContent = text;
+      conversationEl.appendChild(bubble);
+      conversationEl.scrollTop = conversationEl.scrollHeight;
+    }
+
+    function renderThumbs() {
+      thumbsEl.innerHTML = '';
+      deck.forEach((slide, index) => {
+        const button = document.createElement('button');
+        button.className = `thumb${index === currentSlideIndex ? ' active' : ''}`;
+        button.innerHTML = `<strong>${index + 1}. ${slide.title}</strong><span>${slide.kicker}</span>`;
+        button.addEventListener('click', () => {
+          currentSlideIndex = index;
+          renderSlide();
+        });
+        thumbsEl.appendChild(button);
+      });
+    }
+
+    function renderSlide() {
+      const slide = getActiveSlide();
+      slideKickerEl.textContent = slide.kicker;
+      slideIndexEl.textContent = `${currentSlideIndex + 1} / ${deck.length}`;
+      slideTitleEl.textContent = slide.title;
+      slideLedeEl.textContent = slide.lede;
+      slideNotePreviewEl.textContent = slide.notes;
+      speakerNotesEl.textContent = slide.notes;
+      progressTextEl.textContent = `Slide ${currentSlideIndex + 1} / ${deck.length}`;
+      slideBulletsEl.innerHTML = '';
+      slide.bullets.forEach((bullet) => {
+        const item = document.createElement('li');
+        item.textContent = bullet;
+        slideBulletsEl.appendChild(item);
+      });
+      renderThumbs();
+    }
+
+    async function detectCapabilities() {
+      gpuChipEl.textContent = navigator.gpu ? 'available' : 'not available';
+      sttChipEl.textContent = recognition ? 'available' : 'not available';
+      if (!recognition) {
+        startSttBtn.disabled = true;
+        stopSttBtn.disabled = true;
+      }
+    }
+
+    async function ensureTtsReady() {
+      if (ttsReady) return;
+      updateStatus('Loading KittenTTS worker for the slides lab…');
+      const payload = await postToWorker('init', {
+        modelId: modelSelectEl.value,
+        runtime: runtimeSelectEl.value,
+        wasmThreads: 4,
+        wasmSimd: true,
+      });
+      ttsReady = true;
+      ttsChipEl.textContent = payload.runtimeActual || payload.runtimeRequested || 'ready';
+      updateStatus('Narrator ready. You can read the slide or notes aloud.', 'success');
+    }
+
+    function createWavBlob(floatArr, sampleRate) {
+      const pcm16 = new Int16Array(floatArr.length);
+      for (let i = 0; i < floatArr.length; i += 1) {
+        const sample = Math.max(-1, Math.min(1, floatArr[i]));
+        pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+      }
+
+      const buffer = new ArrayBuffer(44 + pcm16.length * 2);
+      const view = new DataView(buffer);
+      const writeString = (offset, text) => {
+        for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+      };
+
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + pcm16.length * 2, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, pcm16.length * 2, true);
+
+      let offset = 44;
+      for (let i = 0; i < pcm16.length; i += 1, offset += 2) {
+        view.setInt16(offset, pcm16[i], true);
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    async function narrate(text, label) {
+      await ensureTtsReady();
+      updateStatus(`Generating narration for ${label}…`);
+      const result = await postToWorker('generate', {
+        text,
+        voice: voiceSelectEl.value,
+        speed: Number(speedSelectEl.value),
+      });
+      const blob = createWavBlob(result.floatArr, result.sampleRate);
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      await audio.play();
+      ttsChipEl.textContent = `speaking ${voiceSelectEl.value}`;
+      audio.addEventListener('ended', () => {
+        URL.revokeObjectURL(url);
+        ttsChipEl.textContent = 'ready';
+      }, { once: true });
+      updateStatus(`Narrating ${label}.`, 'success');
+    }
+
+    function buildSlideNarration(slide) {
+      return [slide.title, slide.lede, ...slide.bullets].join('. ');
+    }
+
+    function buildSlideContext(slide) {
+      return `Slide: ${slide.title}\nKicker: ${slide.kicker}\nSummary: ${slide.lede}\nBullets:\n- ${slide.bullets.join('\n- ')}\nNotes: ${slide.notes}`;
+    }
+
+    function localAssistantReply(slide, question) {
+      const normalized = question.toLowerCase();
+      if (normalized.includes('summary') || normalized.includes('summarize')) {
+        return `${slide.title}: ${slide.lede} Key points: ${slide.bullets.join('; ')}.`;
+      }
+      if (normalized.includes('risk') || normalized.includes('concern')) {
+        return `The main risk on this slide is integration complexity. We still need a concrete browser LLM backend, but the slide-aware assistant boundary is already isolated.`;
+      }
+      if (normalized.includes('next') || normalized.includes('plan')) {
+        return `Next, wire a real WebGPU-capable model behind window.slideAssistantAdapter, decide a slide source format, and add presenter-state persistence.`;
+      }
+      return `Using the active slide context, I would answer: ${slide.lede} The strongest support points are ${slide.bullets.join(', ')}.`;
+    }
+
+    async function askAssistant(question) {
+      const slide = getActiveSlide();
+      addBubble('user', question);
+      updateStatus('Thinking with the active slide context…');
+
+      try {
+        let answer;
+        if (window.slideAssistantAdapter?.respond) {
+          answer = await window.slideAssistantAdapter.respond({
+            slide,
+            question,
+            deck,
+            useWebGPU: Boolean(navigator.gpu),
+            context: buildSlideContext(slide),
+          });
+        } else {
+          answer = localAssistantReply(slide, question);
+        }
+
+        addBubble('assistant', answer);
+        updateStatus(window.slideAssistantAdapter?.respond
+          ? 'Assistant responded through the external slide adapter.'
+          : 'Assistant responded with the local slide-aware fallback. Plug in a WebGPU adapter for live model answers.', 'success');
+      } catch (error) {
+        addBubble('system', `Assistant error: ${error.message}`);
+        updateStatus(`Assistant error: ${error.message}`, 'warning');
+      }
+    }
+
+    if (recognition) {
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        listening = true;
+        sttChipEl.textContent = 'listening';
+        startSttBtn.disabled = true;
+        stopSttBtn.disabled = false;
+        updateStatus('Listening for a spoken question…');
+      };
+
+      recognition.onend = () => {
+        listening = false;
+        sttChipEl.textContent = 'ready';
+        startSttBtn.disabled = false;
+        stopSttBtn.disabled = true;
+      };
+
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map((result) => result[0]?.transcript || '')
+          .join(' ')
+          .trim();
+        promptInputEl.value = transcript;
+      };
+
+      recognition.onerror = (event) => {
+        updateStatus(`STT error: ${event.error}`, 'warning');
+      };
+    }
+
+    document.getElementById('prev-slide').addEventListener('click', () => {
+      currentSlideIndex = (currentSlideIndex - 1 + deck.length) % deck.length;
+      renderSlide();
+    });
+
+    document.getElementById('next-slide').addEventListener('click', () => {
+      currentSlideIndex = (currentSlideIndex + 1) % deck.length;
+      renderSlide();
+    });
+
+    initTtsBtn.addEventListener('click', async () => {
+      try {
+        await ensureTtsReady();
+      } catch (error) {
+        updateStatus(`TTS init failed: ${error.message}`, 'warning');
+      }
+    });
+
+    readSlideBtn.addEventListener('click', async () => {
+      try {
+        await narrate(buildSlideNarration(getActiveSlide()), 'the active slide');
+      } catch (error) {
+        updateStatus(`Narration failed: ${error.message}`, 'warning');
+      }
+    });
+
+    readNotesBtn.addEventListener('click', async () => {
+      try {
+        await narrate(getActiveSlide().notes, 'presenter notes');
+      } catch (error) {
+        updateStatus(`Narration failed: ${error.message}`, 'warning');
+      }
+    });
+
+    startSttBtn.addEventListener('click', () => {
+      if (!recognition || listening) return;
+      recognition.start();
+    });
+
+    stopSttBtn.addEventListener('click', () => {
+      if (!recognition || !listening) return;
+      recognition.stop();
+    });
+
+    askAssistantBtn.addEventListener('click', async () => {
+      const question = promptInputEl.value.trim();
+      if (!question) {
+        updateStatus('Enter or dictate a question first.', 'warning');
+        return;
+      }
+      await askAssistant(question);
+    });
+
+    suggestQuestionBtn.addEventListener('click', () => {
+      const slide = getActiveSlide();
+      promptInputEl.value = `What is the strongest demo path for slide ${currentSlideIndex + 1}, and what would an audience likely ask about ${slide.kicker.toLowerCase()}?`;
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.target instanceof HTMLTextAreaElement) return;
+      if (event.key === 'ArrowRight') {
+        currentSlideIndex = (currentSlideIndex + 1) % deck.length;
+        renderSlide();
+      }
+      if (event.key === 'ArrowLeft') {
+        currentSlideIndex = (currentSlideIndex - 1 + deck.length) % deck.length;
+        renderSlide();
+      }
+    });
+
+    renderSlide();
+    detectCapabilities();
+    addBubble('system', 'Slides lab booted. Load the narrator, dictate a question, or attach window.slideAssistantAdapter for a real browser LLM.');
+  </script>
+</body>
+
+</html>

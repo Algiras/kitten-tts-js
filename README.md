@@ -143,6 +143,8 @@ If port `4173` is already occupied, the command now exits with an explicit error
 
 This serves [`docs/index.html`](./docs/index.html), where you can type text, pick voice/model, and generate speech directly in the browser.
 
+The repo also includes [`docs/slides.html`](./docs/slides.html), a slides-plus-assistant lab that pairs a presentation stage with a side-by-side browser assistant pane. The prototype reuses KittenTTS for narration, exposes browser STT when available, and leaves a clean `window.slideAssistantAdapter` hook for a future WebGPU-backed browser LLM.
+
 ### Browser (Web Worker — recommended for production)
 
 Running inference in a Worker keeps the UI thread responsive during the ~5–10 s model load and synthesis.
