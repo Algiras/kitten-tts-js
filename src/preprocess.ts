@@ -9,28 +9,22 @@ const _ONES = ["", "one", "two", "three", "four", "five", "six", "seven", "eight
 const _TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
 const _SCALE = ["", "thousand", "million", "billion", "trillion"];
 
-const _ORDINAL_EXCEPTIONS = {
+const _ORDINAL_EXCEPTIONS: Record<string, string> = {
   "one": "first", "two": "second", "three": "third", "four": "fourth",
   "five": "fifth", "six": "sixth", "seven": "seventh", "eight": "eighth",
   "nine": "ninth", "twelve": "twelfth",
 };
 
-const _CURRENCY_SYMBOLS = {
+const _CURRENCY_SYMBOLS: Record<string, string> = {
   "$": "dollar", "€": "euro", "£": "pound", "¥": "yen",
   "₹": "rupee", "₩": "won", "₿": "bitcoin",
 };
 
-const _ROMAN = [
-  [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
-  [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
-  [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]
-];
-
 const _RE_ROMAN = /\b(M{0,4})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\b/g;
 
-function _three_digits_to_words(n) {
+function _three_digits_to_words(n: number): string {
   if (n === 0) return "";
-  const parts = [];
+  const parts: string[] = [];
   const hundreds = Math.floor(n / 100);
   const remainder = n % 100;
   if (hundreds) parts.push(`${_ONES[hundreds]} hundred`);
@@ -45,19 +39,19 @@ function _three_digits_to_words(n) {
   return parts.join(" ");
 }
 
-export function number_to_words(n) {
-  if (typeof n !== 'number') n = parseInt(n, 10);
-  if (isNaN(n)) return "";
+export function number_to_words(n: number | string): string {
+  if (typeof n !== 'number') n = parseInt(n as string, 10);
+  if (isNaN(n as number)) return "";
   if (n === 0) return "zero";
-  if (n < 0) return `negative ${number_to_words(-n)}`;
+  if ((n as number) < 0) return `negative ${number_to_words(-(n as number))}`;
 
-  if (n >= 100 && n <= 9999 && n % 100 === 0 && n % 1000 !== 0) {
-    const hundreds = Math.floor(n / 100);
+  if ((n as number) >= 100 && (n as number) <= 9999 && (n as number) % 100 === 0 && (n as number) % 1000 !== 0) {
+    const hundreds = Math.floor((n as number) / 100);
     if (hundreds < 20) return `${_ONES[hundreds]} hundred`;
   }
 
-  const parts = [];
-  let tempN = n;
+  const parts: string[] = [];
+  let tempN = n as number;
   for (let i = 0; i < _SCALE.length; i++) {
     const scale = _SCALE[i];
     const chunk = tempN % 1000;
@@ -71,16 +65,16 @@ export function number_to_words(n) {
   return parts.reverse().join(" ");
 }
 
-export function float_to_words(value, decimal_sep = "point") {
+export function float_to_words(value: number | string, decimal_sep = "point"): string {
   const text = String(value);
   const negative = text.startsWith("-");
-  let val_str = negative ? text.substring(1) : text;
+  const val_str = negative ? text.substring(1) : text;
 
-  let result;
+  let result: string;
   if (val_str.includes(".")) {
     const [int_part, dec_part] = val_str.split(".", 2);
     const int_words = int_part ? number_to_words(parseInt(int_part, 10)) : "zero";
-    const digit_map = ["zero", ..._ONES.slice(1, 10)];
+    const digit_map: string[] = ["zero", ..._ONES.slice(1, 10)];
     const dec_words = dec_part.split("").map(d => digit_map[parseInt(d, 10)]).join(" ");
     result = `${int_words} ${decimal_sep} ${dec_words}`;
   } else {
@@ -89,8 +83,8 @@ export function float_to_words(value, decimal_sep = "point") {
   return negative ? `negative ${result}` : result;
 }
 
-export function roman_to_int(s) {
-  const val = { "I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000 };
+export function roman_to_int(s: string): number {
+  const val: Record<string, number> = { "I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000 };
   let result = 0;
   let prev = 0;
   for (let i = s.length - 1; i >= 0; i--) {
@@ -124,7 +118,7 @@ const _RE_DECADE = /\b(\d{1,3})0s\b/gi;
 const _RE_LEAD_DEC = /(?<!\d)\.([\d])/g;
 
 // Helpers
-function _ordinal_suffix(n) {
+function _ordinal_suffix(n: number): string {
   const word = number_to_words(n);
   let prefix = "", last = word, joiner = "";
   if (word.includes("-")) {
@@ -139,7 +133,7 @@ function _ordinal_suffix(n) {
     joiner = " ";
   }
 
-  let last_ord;
+  let last_ord: string;
   if (_ORDINAL_EXCEPTIONS[last]) {
     last_ord = _ORDINAL_EXCEPTIONS[last];
   } else if (last.endsWith("t")) {
@@ -152,8 +146,42 @@ function _ordinal_suffix(n) {
   return prefix ? `${prefix}${joiner}${last_ord}` : last_ord;
 }
 
+export interface TextPreprocessorConfig {
+  lowercase: boolean;
+  replace_numbers: boolean;
+  replace_floats: boolean;
+  expand_contractions: boolean;
+  expand_model_names: boolean;
+  expand_ordinals: boolean;
+  expand_percentages: boolean;
+  expand_currency: boolean;
+  expand_time: boolean;
+  expand_ranges: boolean;
+  expand_units: boolean;
+  expand_scale_suffixes: boolean;
+  expand_scientific_notation: boolean;
+  expand_fractions: boolean;
+  expand_decades: boolean;
+  expand_phone_numbers: boolean;
+  expand_ip_addresses: boolean;
+  normalize_leading_decimals: boolean;
+  expand_roman_numerals: boolean;
+  remove_urls: boolean;
+  remove_emails: boolean;
+  remove_html: boolean;
+  remove_hashtags: boolean;
+  remove_mentions: boolean;
+  remove_punctuation: boolean;
+  remove_stopwords: boolean;
+  normalize_unicode: boolean;
+  remove_accents: boolean;
+  remove_extra_whitespace: boolean;
+}
+
 export class TextPreprocessor {
-  constructor(options = {}) {
+  config: TextPreprocessorConfig;
+
+  constructor(options: Partial<TextPreprocessorConfig> = {}) {
     this.config = {
       lowercase: true,
       replace_numbers: true,
@@ -188,7 +216,7 @@ export class TextPreprocessor {
     };
   }
 
-  process(text) {
+  process(text: string): string {
     let t = text;
     const cfg = this.config;
 
@@ -200,7 +228,7 @@ export class TextPreprocessor {
     if (cfg.remove_mentions) t = t.replace(_RE_MENTION, "");
 
     if (cfg.expand_contractions) {
-      const contractions = [
+      const contractions: [RegExp, string][] = [
         [/\bcan't\b/gi, "cannot"], [/\bwon't\b/gi, "will not"], [/\bshan't\b/gi, "shall not"],
         [/\bain't\b/gi, "is not"], [/\blet's\b/gi, "let us"], [/\b(\w+)n't\b/gi, "$1 not"],
         [/\b(\w+)'re\b/gi, "$1 are"], [/\b(\w+)'ve\b/gi, "$1 have"], [/\b(\w+)'ll\b/gi, "$1 will"],
@@ -213,8 +241,8 @@ export class TextPreprocessor {
 
     if (cfg.expand_ip_addresses) {
       t = t.replace(/\b(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/g, (_, a, b, c, d) => {
-        const dmap = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine" };
-        const octet = (s) => s.split("").map(x => dmap[x]).join(" ");
+        const dmap: Record<string, string> = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine" };
+        const octet = (s: string) => s.split("").map(x => dmap[x]).join(" ");
         return [a, b, c, d].map(octet).join(" dot ");
       });
     }
@@ -225,7 +253,7 @@ export class TextPreprocessor {
     }
 
     if (cfg.expand_currency) {
-      const smap = { "K": "thousand", "M": "million", "B": "billion", "T": "trillion" };
+      const smap: Record<string, string> = { "K": "thousand", "M": "million", "B": "billion", "T": "trillion" };
       t = t.replace(_RE_CURRENCY, (_, sym, raw, suffix) => {
         raw = raw.replace(/,/g, "");
         const unit = _CURRENCY_SYMBOLS[sym] || "dollar";
@@ -274,7 +302,7 @@ export class TextPreprocessor {
     }
 
     if (cfg.expand_units) {
-      const umap = { "km": "kilometers", "kg": "kilograms", "mg": "milligrams", "ml": "milliliters", "gb": "gigabytes", "mb": "megabytes", "kb": "kilobytes", "tb": "terabytes", "hz": "hertz", "khz": "kilohertz", "mhz": "megahertz", "ghz": "gigahertz", "mph": "miles per hour", "kph": "kilometers per hour", "ms": "milliseconds", "ns": "nanoseconds", "µs": "microseconds", "°c": "degrees Celsius", "c°": "degrees Celsius", "°f": "degrees Fahrenheit", "f°": "degrees Fahrenheit" };
+      const umap: Record<string, string> = { "km": "kilometers", "kg": "kilograms", "mg": "milligrams", "ml": "milliliters", "gb": "gigabytes", "mb": "megabytes", "kb": "kilobytes", "tb": "terabytes", "hz": "hertz", "khz": "kilohertz", "mhz": "megahertz", "ghz": "gigahertz", "mph": "miles per hour", "kph": "kilometers per hour", "ms": "milliseconds", "ns": "nanoseconds", "µs": "microseconds", "°c": "degrees Celsius", "c°": "degrees Celsius", "°f": "degrees Fahrenheit", "f°": "degrees Fahrenheit" };
       t = t.replace(_RE_UNIT, (_, raw, unit) => {
         const exp = umap[unit.toLowerCase()] || unit;
         const num = raw.includes(".") ? float_to_words(parseFloat(raw)) : number_to_words(parseInt(raw, 10));
@@ -292,7 +320,7 @@ export class TextPreprocessor {
     }
 
     if (cfg.expand_scale_suffixes) {
-      const smap = { "K": "thousand", "M": "million", "B": "billion", "T": "trillion" };
+      const smap: Record<string, string> = { "K": "thousand", "M": "million", "B": "billion", "T": "trillion" };
       t = t.replace(_RE_SCALE, (_, raw, suf) => {
         const num = raw.includes(".") ? float_to_words(raw) : number_to_words(parseInt(raw, 10));
         return `${num} ${smap[suf] || suf}`;
@@ -304,7 +332,7 @@ export class TextPreprocessor {
         const n = parseInt(nm, 10), d = parseInt(dn, 10);
         if (d === 0) return m;
         const nw = number_to_words(n);
-        let dw;
+        let dw: string;
         if (d === 2) dw = n === 1 ? "half" : "halves";
         else if (d === 4) dw = n === 1 ? "quarter" : "quarters";
         else dw = _ordinal_suffix(d) + (n !== 1 ? "s" : "");
@@ -327,8 +355,8 @@ export class TextPreprocessor {
     }
 
     if (cfg.expand_phone_numbers) {
-      const dmap = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine" };
-      const _d = (s) => s.split("").map(c => dmap[c]).join(" ");
+      const dmap: Record<string, string> = { "0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six", "7": "seven", "8": "eight", "9": "nine" };
+      const _d = (s: string) => s.split("").map(c => dmap[c]).join(" ");
       t = t.replace(/(?<!\d-)(?<!\d)\b(\d{1,2})-(\d{3})-(\d{3})-(\d{4})\b(?!-\d)/g, (_, a, b, c, d) => [_d(a), _d(b), _d(c), _d(d)].join(" "));
       t = t.replace(/(?<!\d-)(?<!\d)\b(\d{3})-(\d{3})-(\d{4})\b(?!-\d)/g, (_, a, b, c) => [_d(a), _d(b), _d(c)].join(" "));
       t = t.replace(/(?<!\d-)\b(\d{3})-(\d{4})\b(?!-\d)/g, (_, a, b) => [_d(a), _d(b)].join(" "));
@@ -349,3 +377,6 @@ export class TextPreprocessor {
     return t;
   }
 }
+
+// suppress unused import warning for _RE_ROMAN (config option stub)
+void _RE_ROMAN;

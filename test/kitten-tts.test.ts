@@ -1,9 +1,9 @@
 import { strict as assert } from 'assert';
 import { test } from 'node:test';
-import { KittenTTS } from '../src/kitten-tts.js';
+import { KittenTTS } from '../src/kitten-tts.ts';
 
 // Minimal mock instance to test pure helper methods without loading a model
-const tts = new KittenTTS(null, {}, {});
+const tts = new (KittenTTS as unknown as new (...args: unknown[]) => KittenTTS)(null, {}, {});
 
 test('_ensurePunctuation adds comma when no trailing punctuation', () => {
   assert.equal(tts._ensurePunctuation('hello'), 'hello,');

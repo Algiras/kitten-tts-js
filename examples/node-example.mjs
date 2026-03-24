@@ -3,10 +3,11 @@
  *   node examples/node-example.mjs
  *
  * Requires: npm install (from project root)
+ * Run via: npm run example
  * Output: output.wav in current directory
  */
 
-import { KittenTTS } from '../src/index.js';
+import { KittenTTS } from '../dist/index.node.js';
 
 async function main() {
   console.log('Loading KittenTTS model…');
@@ -15,19 +16,19 @@ async function main() {
   console.log('Available voices:', tts.list_voices());
 
   // Simple generation
-  console.log('\n[1] Generating with voice Bella…');
+  console.log('\n[1] Generating with voice Jasper…');
   const audio = await tts.generate('Hello from KittenTTS! This is a JavaScript port of the ultra-lightweight TTS library.', {
-    voice: 'Bella',
+    voice: 'Jasper',
     speed: 1.0,
   });
   await audio.save('output.wav');
   console.log(`  Duration: ${audio.duration.toFixed(2)}s`);
 
   // Streaming example
-  console.log('\n[2] Streaming multi-sentence text with voice Leo…');
+  console.log('\n[2] Streaming multi-sentence text with voice Bruno…');
   const longText = 'The quick brown fox jumps over the lazy dog. It was the best of times, it was the worst of times. To be or not to be, that is the question.';
   let chunkIdx = 0;
-  for await (const { text, audio: chunkAudio } of tts.stream(longText, { voice: 'Leo' })) {
+  for await (const { text, audio: chunkAudio } of tts.stream(longText, { voice: 'Bruno' })) {
     console.log(`  Chunk ${++chunkIdx}: "${text}" → ${chunkAudio.duration.toFixed(2)}s`);
     await chunkAudio.save(`output-chunk-${chunkIdx}.wav`);
   }

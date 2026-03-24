@@ -16,12 +16,19 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org/
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --registry https://registry.npmmirror.com
+
+      - name: Run typecheck
+        run: npm run typecheck
 
       - name: Run tests
         run: npm test
+
+      - name: Build library
+        run: npm run build
 
       - name: Publish
         run: npm publish --access public

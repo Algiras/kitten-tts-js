@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { test } from 'node:test';
-import { TextCleaner, textToIds } from '../src/text-cleaner.js';
+import { TextCleaner, textToIds } from '../src/text-cleaner.ts';
 
 test('TextCleaner pads output with [0, ..., 10, 0]', () => {
   const cleaner = new TextCleaner();

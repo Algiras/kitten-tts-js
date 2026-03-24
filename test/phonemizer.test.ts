@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { test } from 'node:test';
-import { phonemize } from '../src/phonemizer.js';
+import { phonemize } from '../src/phonemizer.ts';
 
 test('phonemize returns non-empty IPA for a simple word', async () => {
   const result = await phonemize('hello');

@@ -1,23 +1,21 @@
 /**
- * NPZ loader: reads a NumPy .npz archive (ZIP of .npy files) and returns
- * a map of { [key: string]: Float32Array } with shape metadata attached.
- *
- * Supports float32, float64, int32, int64 dtypes.
- * Both C-order and F-order arrays are returned as flat typed arrays.
+ * NPZ loader: reads a NumPy .npz archive (ZIP of .npy files).
  */
 
 import JSZip from 'jszip';
 
 const MAGIC = '\x93NUMPY';
 
-/**
- * Parse a single .npy buffer.
- * @param {ArrayBuffer} buf
- * @returns {{ data: Float32Array, shape: number[], dtype: string }}
- */
-function parseNpy(buf) {
+export interface NpyArray {
+  data: Float32Array;
+  shape: number[];
+  dtype: string;
+}
+
+export type NpzResult = Record<string, NpyArray>;
+
+function parseNpy(buf: ArrayBuffer): NpyArray {
   const bytes = new Uint8Array(buf);
-  // Validate magic
   for (let i = 0; i < 6; i++) {
     if (bytes[i] !== MAGIC.charCodeAt(i)) {
       throw new Error('Not a valid .npy file (bad magic)');
@@ -31,7 +29,6 @@ function parseNpy(buf) {
   const headerBytes = bytes.slice(headerOffset, headerOffset + headerLen);
   const header = new TextDecoder().decode(headerBytes).trim();
 
-  // Parse header dict: "{'descr': '<f4', 'fortran_order': False, 'shape': (N, M), }"
   const descrMatch = header.match(/'descr'\s*:\s*'([^']+)'/);
   const shapeMatch = header.match(/'shape'\s*:\s*\(([^)]*)\)/);
   const fortranMatch = header.match(/'fortran_order'\s*:\s*(True|False)/);
@@ -48,10 +45,8 @@ function parseNpy(buf) {
   const dataOffset = headerOffset + headerLen;
   const dataBuffer = buf.slice(dataOffset);
 
-  // Determine dtype
-  // descr examples: '<f4', '<f8', '<i4', '<i8', '>f4', '|u1'
   const dtype = descr.replace(/[<>|=]/, '');
-  let data;
+  let data: Float32Array | Int32Array | Uint8Array;
   switch (dtype) {
     case 'f4':
       data = new Float32Array(dataBuffer);
@@ -59,17 +54,16 @@ function parseNpy(buf) {
     case 'f8': {
       const f64 = new Float64Array(dataBuffer);
       data = new Float32Array(f64.length);
-      for (let i = 0; i < f64.length; i++) data[i] = f64[i];
+      for (let i = 0; i < f64.length; i++) (data as Float32Array)[i] = f64[i];
       break;
     }
     case 'i4':
       data = new Int32Array(dataBuffer);
       break;
     case 'i8': {
-      // BigInt64 — convert to regular Float32 (lossy but sufficient for embeddings)
       const i64 = new BigInt64Array(dataBuffer);
       data = new Float32Array(i64.length);
-      for (let i = 0; i < i64.length; i++) data[i] = Number(i64[i]);
+      for (let i = 0; i < i64.length; i++) (data as Float32Array)[i] = Number(i64[i]);
       break;
     }
     case 'u1':
@@ -79,40 +73,33 @@ function parseNpy(buf) {
       throw new Error(`Unsupported .npy dtype: ${descr}`);
   }
 
-  // If Fortran order, transpose to C order (row-major)
   if (fortranOrder && shape.length === 2) {
     const [rows, cols] = shape;
     const cOrder = new Float32Array(rows * cols);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        cOrder[r * cols + c] = data[c * rows + r];
+        cOrder[r * cols + c] = (data as Float32Array)[c * rows + r];
       }
     }
     data = cOrder;
   }
 
-  // Attach shape metadata
   const result = new Float32Array(data.buffer, data.byteOffset, data.length);
-  result.shape = shape;
   return { data: result, shape, dtype };
 }
 
-/**
- * Load an .npz file (ZIP archive of .npy files).
- * @param {ArrayBuffer | Buffer} npzBuffer
- * @returns {Promise<{ [key: string]: { data: Float32Array, shape: number[] } }>}
- */
-export async function loadNpz(npzBuffer) {
+export async function loadNpz(npzBuffer: ArrayBuffer | Buffer): Promise<NpzResult> {
   const zip = await JSZip.loadAsync(npzBuffer);
-  const result = {};
+  const result: NpzResult = {};
 
-  const entries = Object.entries(zip.files).filter(([name]) => name.endsWith('.npy') && !zip.files[name].dir);
+  const entries = Object.entries(zip.files).filter(
+    ([name]) => name.endsWith('.npy') && !zip.files[name].dir
+  );
 
   await Promise.all(entries.map(async ([name, file]) => {
     const arrayBuffer = await file.async('arraybuffer');
     const key = name.replace(/\.npy$/, '');
-    const parsed = parseNpy(arrayBuffer);
-    result[key] = parsed;
+    result[key] = parseNpy(arrayBuffer);
   }));
 
   return result;
