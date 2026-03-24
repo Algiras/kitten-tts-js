@@ -25,7 +25,7 @@
     "browser": "npm run build:pages && vite preview --config vite.config.pages.ts --port 4173 --strictPort --host 127.0.0.1",
     "benchmark:approaches": "node --experimental-strip-types scripts/benchmark-approaches.mjs --profile docs",
     "diagnose:node-runtime": "node --experimental-strip-types scripts/diagnose-node-runtime.mjs",
-    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test": "tsx --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "example": "npm run build && node examples/node-example.mjs",
     "prepublishOnly": "npm run typecheck && npm run test && npm run build"
@@ -42,6 +42,7 @@
     "@types/node": "^25.5.0",
     "esbuild": "^0.27.0",
     "playwright": "^1.58.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vite": "^8.0.2",
     "vite-plugin-dts": "^4.5.4"
