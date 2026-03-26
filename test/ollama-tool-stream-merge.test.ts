@@ -62,10 +62,10 @@ test('merge concatenates string arguments (OpenAI-style stream fragments)', () =
 
 test('merge applies name-only then arguments-only deltas', () => {
   const slots = new Map<number, { name: string; argsStr: string }>();
-  mergeOllamaToolDeltas(slots, [{ index: 0, function: { name: 'diagram_live_stack' } }]);
+  mergeOllamaToolDeltas(slots, [{ index: 0, function: { name: 'diagram_reinforcement_loop' } }]);
   mergeOllamaToolDeltas(slots, [{ index: 0, function: { arguments: {} } }]);
   const ready = listReadyToolCallsFromSlots(slots);
   assert.equal(ready.length, 1);
-  assert.equal(ready[0].function.name, 'diagram_live_stack');
+  assert.equal(ready[0].function.name, 'diagram_reinforcement_loop');
   assert.deepEqual(ready[0].function.arguments, {});
 });

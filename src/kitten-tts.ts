@@ -82,10 +82,21 @@ interface PreparedInputs {
   speed: number;
 }
 
+function isCoarseMobileUa(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent || '',
+  );
+}
+
 function resolveWebWasmThreads(opts: FromPretrainedOptions = {}): number {
-  if (Number.isInteger(opts.wasmThreads) && opts.wasmThreads! > 0) return opts.wasmThreads!;
+  if (Number.isInteger(opts.wasmThreads) && opts.wasmThreads! > 0) {
+    return isCoarseMobileUa() ? 1 : opts.wasmThreads!;
+  }
+  if (typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated) return 1;
+  if (isCoarseMobileUa()) return 1;
   if (typeof navigator !== 'undefined' && Number.isInteger(navigator.hardwareConcurrency) && navigator.hardwareConcurrency > 0) {
-    return Math.min(navigator.hardwareConcurrency, 8);
+    return Math.min(navigator.hardwareConcurrency, 4);
   }
   return 4;
 }

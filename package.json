@@ -24,7 +24,7 @@
     "watch:slides-ollama": "vite build --config vite.config.slides-ollama.ts --watch",
     "watch:slides-lab": "vite build --config vite.config.slides-lab.ts --watch",
     "build:pages": "vite build --config vite.config.pages.ts && npm run build:slides-lab && npm run build:slides-ollama && cp node_modules/onnxruntime-web/dist/ort-wasm* docs/",
-    "serve:docs": "serve docs -l 3000",
+    "serve:docs": "serve docs -l tcp://0.0.0.0:3000",
     "dev": "npm run build:pages && npm run serve:docs",
     "watch:pages": "vite build --config vite.config.pages.ts --watch",
     "browser": "npm run build:pages && vite preview --config vite.config.pages.ts --port 4173 --strictPort --host 127.0.0.1",

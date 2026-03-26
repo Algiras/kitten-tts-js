@@ -51,14 +51,24 @@ interface PreparedInputs {
   speed: number;
 }
 
+function isCoarseMobileUa(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent || '',
+  );
+}
+
 function resolveBrowserWasmThreads(opts: BrowserFromPretrainedOptions = {}): number {
-  if (Number.isInteger(opts.wasmThreads) && opts.wasmThreads! > 0) return opts.wasmThreads!;
+  if (Number.isInteger(opts.wasmThreads) && opts.wasmThreads! > 0) {
+    return isCoarseMobileUa() ? 1 : opts.wasmThreads!;
+  }
   // SharedArrayBuffer (required for WASM threads) is only available when the page
   // is cross-origin isolated (COOP + COEP headers). Without it, ORT's pthread_create
   // will fail with a cryptic error. Fall back to single-threaded execution.
   if (typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated) return 1;
+  if (isCoarseMobileUa()) return 1;
   if (typeof navigator !== 'undefined' && Number.isInteger(navigator.hardwareConcurrency) && navigator.hardwareConcurrency > 0) {
-    return Math.min(navigator.hardwareConcurrency, 8);
+    return Math.min(navigator.hardwareConcurrency, 4);
   }
   return 4;
 }

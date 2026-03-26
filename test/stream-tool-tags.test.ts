@@ -46,9 +46,9 @@ test('parseToolsInner self-closing and body diagram', () => {
 });
 
 test('parseToolsInner diagram tool self-closing', () => {
-  const inner = '<tool name="diagram_live_stack" />';
+  const inner = '<tool name="diagram_reinforcement_loop" />';
   const [c] = parseToolsInner(inner);
-  assert.equal(c.function.name, 'diagram_live_stack');
+  assert.equal(c.function.name, 'diagram_reinforcement_loop');
   assert.deepEqual(c.function.arguments, {});
 });
 
@@ -56,7 +56,7 @@ test('isKnownSlideTool is case-insensitive', () => {
   assert.equal(isKnownSlideTool('Go_To_Slide'), true);
   assert.equal(isKnownSlideTool('SET_VOICE'), true);
   assert.equal(isKnownSlideTool('FIREWORKS'), true);
-  assert.equal(isKnownSlideTool('DIAGRAM_LIVE_STACK'), true);
+  assert.equal(isKnownSlideTool('DIAGRAM_REINFORCEMENT_LOOP'), true);
   assert.equal(isKnownSlideTool('show_diagram_preset'), false);
   assert.equal(isKnownSlideTool('made_up_tool'), false);
 });
@@ -64,7 +64,7 @@ test('isKnownSlideTool is case-insensitive', () => {
 test('slideToolCallSortKey is case-insensitive and orders relative to show_overlay vs diagrams', () => {
   assert.equal(slideToolCallSortKey('GO_TO_SLIDE'), 0);
   assert.equal(slideToolCallSortKey('  set_voice  '), 1);
-  assert.ok(slideToolCallSortKey('show_overlay') < slideToolCallSortKey('diagram_live_stack'));
+  assert.ok(slideToolCallSortKey('show_overlay') < slideToolCallSortKey('diagram_reinforcement_loop'));
   assert.equal(slideToolCallSortKey('unknown_tool_xyz'), 100);
 });
 

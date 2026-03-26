@@ -1,230 +1,263 @@
-# kitten-tts @ Vilnius.js — speaker outline
+# Talk outline — kitten-tts-js
 
-Print-friendly cheat sheet: **what to say** and **how long** per slide. On-screen titles and bullets match the deck; **Presenter notes** are the main script hints from the source deck.
-
----
-
-## Slide 1 — Title · ~1 min  
-**Section:** (title only)  
-**On screen:** *kitten-tts: Real-time TTS on (almost) anything*  
-
-**Aim:** Let the title land; name yourself, role, and Kiki as the live AI presenter.
-
-**Say / do:**
-- Optional: one short beat if you point at Kiki’s voice — then advance when ready.
-
-**Kiki (if she speaks):** At most one short in-character line; don’t read an agenda unprompted.
+**Working title (for abstract / meetup listing):** kitten-tts: real-time TTS (text-to-speech) on (almost) anything  
+**Speaker:** Algimantas Krasauskas · AI Engineer, Wix · [GitHub](https://github.com/Algiras) · [LinkedIn](https://www.linkedin.com/in/asimplek/)
 
 ---
 
-## Slide 2 — Vilnius.js opening · ~2 min  
-**On screen:** *Tonight: a port, LLM leverage, and a deck that demos itself.*
+## Slide 1 — Title & you
 
-**Takeaway:** The talk is both the project story and a live demo of the stack.
+**On slide**
 
-**Say / do:**
-- Open with the room; set three anchors: **JS port**, **LLM-assisted build loop**, **this deck as live demo** (KittenTTS + STT + LLM).
-- Bullets on slide: port TTS into JS/browser; LLMs for speed, not garnish; talk = live system that speaks, listens, answers.
+- **Title:** kitten-tts: real-time TTS on (almost) anything
+- **Lede:** Algimantas Krasauskas · AI Engineer · Wix — kitten-tts-js, **Kiki** (AI assistant) in the loop for this deck
+- 🐙 https://github.com/Algiras · 💼 https://www.linkedin.com/in/asimplek/
 
-**Optional prompt for the room:** *What part of the project genuinely needed LLM help instead of normal engineering?*
+**Say**
 
-**Artifacts:** kitten-tts-js · LLM-assisted build loop · Live browser deck  
+- Open on the **title** (what the room is here for), then “Thanks for having me,” name, role, Wix; point at the 🐙 / 💼 lines if useful — don’t read URLs robotically unless someone asks.
+- **kitten-tts-js** repo URLs stay on **thank you** and **Q&A** slides, not here.
 
----
+**Notes**
 
-## Slide 3 — Why port it · ~2 min  
-**On screen:** *I wanted KittenTTS in JavaScript because the browser is where the interesting demos live.*
-
-**Takeaway:** The port matters because it moves TTS into the environments JS developers actually use.
-
-**Say / do:**
-- Origin story: **portability, hackability, browser demos** — not “another port for fun.”
-- Node is useful; the **browser** is where instant demos, shareable repros, and weird UI experiments live.
-
-**Optional prompt:** *Why not keep the original runtime and call it from JavaScript?*
-
-**Artifacts:** Browser runtime · Node runtime · Portable demo surface  
+- The **headline is the talk**, not your name — name and links are supporting context.
 
 ---
 
-## Slide 4 — LLM leverage · ~2 min  
-**On screen:** *LLMs were most useful as acceleration on ugly engineering edges.*
+## Slide 2 — What we’ll talk about (plan)
 
-**Takeaway:** LLMs helped most where iteration speed mattered, not where trust could be outsourced.
+**On slide**
 
-**Say / do:**
-- Be honest: the model didn’t “build the project” — it cut friction on **ONNX quirks, TS cleanup, browser runtime, tests, docs**.
-- Emphasize **verify every runtime claim** yourself.
+- What is TTS (text-to-speech)?
+- What is **KittenTTS**? — models, voices, Hugging Face (HF — model hub) weights
+- **Why kitten-tts-js** — providers, runtimes, why JavaScript (JS)
+- How it was built — agents; Whisper (OpenAI STT family), waveform (audio signal), browser evals
+- Where it runs — Node.js vs browser, requirements (CPU, WASM, WebGPU)
+- What else you might use — other stacks, providers, tradeoffs
+- What’s next → **Q&A** (questions & answers)
 
-**Optional prompt:** *Where did LLM advice save time, and where did it mislead you?*
+**Say**
 
-**Artifacts:** TypeScript refactors · Runtime debugging · Docs and test support  
+- 30–45 seconds: you’re grounding the arc so “why JS” lands after TTS + KittenTTS are defined; **per-slide “On this slide” glossary** (right column in `slides-lab`) defines terms at first use — no separate abbreviations slide.
+- Optional: “I’ll show a short demo when we get to the port” — or stay quiet and surprise them.
 
----
+**Notes**
 
-## Slide 5 — Live stack · ~2 min  
-**On screen:** *The demo stack is simple on purpose: KittenTTS + browser STT + an LLM.*
-
-**Takeaway:** The deck is the orchestration layer for all three channels.
-
-**Say / do:**
-- Make the stack **diagram-simple**: **reason → speak → hear → (score)**.
-- KittenTTS = output; browser STT = input + listen-back hooks; LLM = grounded in **slide context** via an adapter.
-
-**Optional prompt:** *Why keep everything in the deck instead of splitting into separate tools?*
-
-**Artifacts:** KittenTTS worker · Browser STT · Slide-aware LLM adapter  
+- Demo + **live / GitHub / npm** links fit naturally after **slide 5** (why kitten-tts-js) or on **Q&A / thank you**.
 
 ---
 
-## Slide 6 — Reinforcement loop · ~3 min  
-**On screen:** *The main idea is a reinforcement cycle: the system listens to what KittenTTS actually said.*
+## Slide 3 — What is TTS?
 
-**Takeaway:** Optimize for what reaches human ears, not only what exists as text.
+**On slide**
 
-**Say / do:**
-- **Core idea — slow down:** prompt → answer → **speech** → **hearing** → scoring → iteration.
-- Text-only checks miss drift that only shows up in **audio**.
+- TTS = text → waveform you hear; **neural** = ML-trained vs classical / rule-based
+- Pipeline: text → linguistic features (pronunciation / prosody) → acoustic model (sound predictor) → waveform
+- `speechSynthesis` = built-in **Web Speech API** TTS in the tab; no WAV (waveform file) pipeline; hard to **A/B** (compare setups) for *your* stack
 
-**Optional prompt:** *Why is hearing the audio back better than just checking the generated text?*
+**Say**
 
-**Artifacts:** LLM answer · KittenTTS audio · Whisper-style transcript  
+- Set vocabulary for non-speech folks; keep it one minute.
+- Contrast: built-in TTS is great for accessibility and quick UI; **neural** TTS is for when you need repeatable output, export, or the same stack in Node and web.
 
----
+**Demo hook (optional)**
 
-## Slide 7 — Audio correctness · ~2 min  
-**On screen:** *Evaluating the audio channel is different from evaluating the text channel.*
-
-**Takeaway:** If the product is spoken output, correctness must be measured on spoken output.
-
-**Say / do:**
-- LLM text can be “fine” while **spoken** output fails: pronunciation, pacing, truncation, buffering, emphasis.
-- This is why **transcript of what was actually said** matters.
-
-**Optional prompt:** *What kinds of errors show up only when you evaluate the spoken answer?*
-
-**Artifacts:** Audio transcript · Pronunciation drift · Delivery quality  
+- Defer A/B clip until after **why kitten-tts-js** (slide 5): same sentence — `speechSynthesis` vs this port.
 
 ---
 
-## Slide 8 — Scoring loop · ~2 min  
-**On screen:** *Once Whisper hears the answer, the system can score what came out of the speaker.*
+## Slide 4 — What is KittenTTS?
 
-**Takeaway:** Spoken output becomes measurable input; the feedback loop gets stronger.
+**On slide**
 
-**Say / do:**
-- Transcript = artifact → compare to **slide intent** → accept / revise / retry.
-- Frame as **practical iteration**, not academic RL jargon.
+- [KittenTTS](https://github.com/KittenML/KittenTTS) by [KittenML / Stellon Labs](https://github.com/KittenML) — reference implementation (Python)
+- Architecture: **StyleTTS2-style** — same neural TTS research lineage; **ONNX** exports are what the JS port runs (not the Python training loop)
+- **Models / tiers** — nano, micro, mini (size ↔ quality tradeoff; all “small” vs cloud TTS)
+- **Provider of record:** weights and voice embeddings live under **[KittenML on Hugging Face](https://huggingface.co/KittenML)** — that’s the upstream “source of truth”
+- **Voices** (same set in the port): Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo
 
-**Optional prompt:** *What does the system do when the spoken answer fails the correctness check?*
+**Say**
 
-**Artifacts:** Transcript scoring · Slide intent anchors · Retry or revise decision  
-
----
-
-## Slide 9 — Live demo surface · ~2 min  
-**On screen:** *That is why this talk runs inside a deck that can speak, listen, and answer.*
-
-**Takeaway:** The talk UI is part of the demo, not just a container.
-
-**Say / do:**
-- The **deck is the proof**: narrate, audience asks, system answers **in the same UI**.
-- Stage stays clean; presenter tools stay nearby; PTT / waveform / Kiki show **listen → think → speak**.
-
-**Optional prompt:** *How much UI is enough before the demo distracts from the talk?*
-
-**Artifacts:** Presenter notes · Push-to-talk · Waveform + copresenter  
+- Separate **research + checkpoints** (KittenML) from **how you load them** in JS (next slide: `KittenML/…` vs `onnx-community/…` repacks for the browser).
+- kitten-tts-js is a **runtime port**, not a new TTS architecture.
+- One line on license / Apache-2.0 if the room cares.
 
 ---
 
-## Slide 10 — Practical rubric · ~2 min  
-**On screen:** *My quality bar became: grounded, speakable, and correct over the audio channel.*
+## Slide 5 — Why kitten-tts-js?
 
-**Takeaway:** Text quality alone is not enough for a spoken system.
+**On slide**
 
-**Say / do:**
-- Three-part bar: **grounded in slide**, **speakable by TTS**, **still correct after listen-back**.
-- Memorable and operational — this shaped the live demo.
+*What it is*
 
-**Optional prompt:** *How do you score “sounds good when spoken” without a vague rubric?*
+- Unofficial **TypeScript/JavaScript** port of KittenTTS — [Algiras/kitten-tts-js](https://github.com/Algiras/kitten-tts-js) · `npm install kitten-tts-js`
+- **ONNX Runtime** in-process: Node **CPU** · browser **WASM** (+ SIMD / threads where enabled) · **WebGPU** when available
+- **Streaming:** async generator, sentence-by-sentence · **caching** (Node cache dir + browser Cache API) after first download
 
-**Artifacts:** Grounding checks · Speakability checks · Transcript checks  
+*Models & providers (the practical split)*
 
----
+- **Node:** load from **`KittenML/…`** Hugging Face IDs (e.g. int8 nano) — **CPU** execution in the supported runtime layer
+- **Browser (WASM):** community **ONNX repacks** under **`onnx-community/KittenTTS-…-ONNX`** — Nano, Micro, Mini tiers for CPU/WASM
+- **Browser (WebGPU):** **Nano ONNX only** today — ORT WebGPU doesn’t cover the int8 ops path used by Micro/Mini the same way; WASM fallback remains
 
-## Slide 11 — Engineering lessons · ~2 min  
-**On screen:** *The hard parts were orchestration, trust, and runtime weirdness.*
+*Why JavaScript*
 
-**Takeaway:** Reliability came from coordinating messy channels, not from one model choice.
+- **Fast iteration** — one language for lib, demo, and tests
+- **Streaming / UX** — earlier first chunk; fits chat and voice UIs
+- **Deployment** — same code in CLI, static pages, workers
+- **Ecosystem** — npm, no Python service in the loop for *your* app
 
-**Say / do:**
-- Vilnius.js angle: not “AI magic” — **predictable browser behavior** under a live talk.
-- Pain at the seams: **model → TTS → playback → STT → slide state**; degradation paths; alignment.
+**Say**
 
-**Optional prompt:** *What browser/runtime issue hurt most during the port?*
+- “Same voices and research as KittenTTS; I wanted it to run **where my stack already lives**.”
+- Name the two “addresses” people actually paste: **`KittenML/…`** on the server side vs **`onnx-community/…`** when you need a browser-shaped ONNX bundle.
+- Honest tradeoff: the Python project is the reference; JS buys **distribution and integration**, not always beating every cloud API on raw quality.
 
-**Artifacts:** Capability checks · Fallback paths · Audio-state sync  
+**Demo hook (optional)**
 
----
-
-## Slide 12 — What is next · ~3 min  
-**On screen:** *The architecture is now ready for stronger local models and better audio evaluation.*
-
-**Takeaway:** Clear boundaries let you swap models and improve scoring without rewriting the demo.
-
-**Say / do:**
-- **Stable** stage/orchestration; **swap** LLM behind the adapter; **improve** listen-back scoring.
-- Optimistic but honest — not “done,” but **ready to iterate**.
-
-**Optional prompt:** *If browser models improve tomorrow, what changes first?*
-
-**Artifacts:** Slide UI · LLM adapter · Audio evaluator  
+- Short live or recorded clip here; or: [Live demo](https://algiras.github.io/kitten-tts-js) · [GitHub](https://github.com/Algiras/kitten-tts-js) · [npm](https://www.npmjs.com/package/kitten-tts-js)
 
 ---
 
-## Slide 13 — Close · ~2 min  
-**On screen:** *The real point is not just TTS in JS, but a feedback loop for spoken interfaces.*
+## Slide 6 — How it was built (process)
 
-**Takeaway:** Spoken systems improve when they can hear themselves and score what was delivered.
+**On slide**
 
-**Say / do:**
-- Return to the title hook: portable TTS + **listen-back evaluation** as the deeper claim.
-- Port enabled the loop; LLMs accelerated the build; **audio channel** is where product truth lives.
+- **Agents + editor:** Cursor, Composer, Claude Code — spec → code → fix loops
+- **STT eval:** Whisper (or similar) on **synthetic WAV** — transcript vs **reference** text; normalize and diff; optional WER
+- **Signal eval:** Waveform / level **gates** (silence, peak, RMS) on fixed prompts so bad exports fail without ear-testing
+- **Web confidence:** Playwright or browser-agent runs — real **WASM / WebAudio** path, not “green in Node” only
+- **Tooling:** Repo **whisper-tts-eval** skill — Claude / Cursor `/tts-eval` and `/whisper-eval` for the same loop
 
-**Optional prompt:** *What would you build next if you focused purely on reinforcement and evaluation?*
+**Say**
 
-**Artifacts:** Narration loop · Listen-back loop · Audio correctness  
-
----
-
-## Slide 14 — Questions · as needed  
-**On screen:** *Questions?*
-
-**Takeaway:** Make space for the room.
-
-**Say / do:**
-- Pause; scan the room. If silence, offer one seed: ONNX vs WASM, or scoring spoken answers in production.
-- Short, spoken-friendly answers; repeat unclear questions for the room.
-
-**Optional prompt:** *What do you want to know that the talk didn’t cover?*
-
-**Artifacts:** kitten-tts-js repo · This deck · Ollama + Kiki setup  
+- Story beat: “I didn’t trust ‘sounds fine’ — I wanted comparable strings and signals across commits.”
+- **Next slide** is the full-screen loop diagram only — one spoken sentence there, then let the graphic carry it.
 
 ---
 
-## Slide 15 — Thank you · ~1 min  
-**On screen:** *Thank you*
+## Slide 7 — Build / eval loop (diagram)
 
-**Takeaway:** Close warmly; point people at the project.
+**On slide**
 
-**Say / do:**
-- Thanks; GitHub welcome; deck was LLM-assisted + dogfooded; enjoy the rest of Vilnius.js.
-- Optional beat of silence before leaving fullscreen so applause can land.
+- **Mermaid diagram:** change → WAV out → STT + level gates → pass? → ship or iterate
 
-**Kiki:** One warm closing line unless Algimantas asks more; thanks from both of you is OK in character.
+**Say**
 
-**Artifacts:** GitHub: kitten-tts-js · Try the deck with `?debug=1`  
+- One sentence on the cycle; do not read node labels as a list unless the room asks.
 
 ---
 
-*Generated from `src/slides-lab-main.ts` (`deck` + `deckMeta`). Rebuild or edit there if slides change.*
+## Slide 8 — Where it runs — requirements
+
+**On slide**
+
+- **Node.js** — supported release line from the repo; **CPU** runtime (thread count configurable). First run **downloads** the chosen HF model; then cached.
+- **Browser** — modern evergreen; **secure context** (HTTPS or localhost) for sensible audio + model fetch behavior
+- **WASM path** — SIMD / multi-threading when the embedding page and ORT build allow it (otherwise slower but still works)
+- **WebGPU** — needs a capable browser + GPU stack; **not** all models: **Nano ONNX only** for GPU; Micro/Mini stay WASM on the web
+- **Network / disk** — model bytes are not bundled in `npm` the same way as a tiny library; plan for **tens of MB** per tier and **offline** only after cache warms
+
+**Say**
+
+- Summarize the **support matrix** in one sentence: Node + KittenML IDs + CPU; browser + onnx-community ONNX + WASM for all three tiers; GPU only Nano.
+- Optional: `diagnose:node-runtime` from the README if the audience is implementers.
+
+---
+
+## Slide 9 — Landscape — other models, providers, requirements
+
+**On slide**
+
+| Option | Model / provider shape | Typical requirements |
+|--------|-------------------------|----------------------|
+| **Web Speech API** | OS / browser voices, not your ONNX file | None beyond the browser; weakest control & consistency |
+| **kokoro-js** / small **ONNX-in-JS** TTS | Own checkpoints + ORT Web; compare **size, license, voice count** | Same class as kitten-tts-js: fetch, cache, WASM/WebGPU story |
+| **Cloud TTS** (ElevenLabs, Google, Azure, **OpenAI**, …) | **Their** hosted model; **API key + billing** | Network always on; data leaves your infra; often best raw quality |
+| **Self-host server** (**Piper**, Coqui-era tools, custom ONNX server) | You ship **binary + model files** or a **container** | Ops overhead; not “static GitHub Pages only” |
+| **Upstream Python KittenTTS** | **KittenML** checkpoints; Python env | GPU/CPU as upstream docs; different deployment than JS |
+
+**Say**
+
+- One axis: **who hosts the model** (you vs vendor vs user’s browser cache).
+- Other axis: **requirements** — API key & egress vs disk & RAM vs WebGPU/WASM availability.
+- Position kitten-tts-js: **self-hosted weights, small footprint, JS-native**, great when you want Kitten voices **without** a Python service — not “always replace cloud TTS.”
+
+---
+
+## Slide 10 — What’s next?
+
+**On slide**
+
+- **Document** Whisper + waveform evals end-to-end — thresholds, fixtures, CI hooks
+- Stronger **listen-back / scoring** in this deck lab (transcript vs intent, not only waveforms)
+- Docs and examples for **worker** layout and **streaming** UX patterns
+- **Golden WAV + transcript baselines in CI** — fail PRs when STT or level checks drift
+- Community: issues/PRs on [Algiras/kitten-tts-js](https://github.com/Algiras/kitten-tts-js)
+
+**Say**
+
+- Bridge to Q&A: eval story is “measure transcripts and waveforms, then lock golden files in CI”; one line on contributors; optional `?debug=1` on the slides lab if you showed it.
+
+---
+
+## Slide 11 — Q&A
+
+**On slide**
+
+- **Questions?**
+- Optional: name, handle, or email; **repo + demo URLs** (repeat here so latecomers see them)
+
+**Say**
+
+- Stay at the Q&A slide while you answer; keeps the room focused and gives latecomers the links.
+- If nobody speaks: offer seed prompts (e.g. “**which HF ID in Node vs browser?**” / “**WebGPU vs WASM** for my model?” / “**cloud vs self-host** for production?”).
+
+**Notes**
+
+- Reserve **as needed** time here; shorten slide 10 (roadmap) or earlier blocks if the slot is tight.
+
+---
+
+## Slide 12 — Thank you
+
+**On slide**
+
+- **Thank you**
+- kitten-tts-js · [github.com/Algiras/kitten-tts-js](https://github.com/Algiras/kitten-tts-js)
+- Thanks again to [KittenML / KittenTTS](https://github.com/KittenML/KittenTTS) for models and voices
+
+**Say**
+
+- Short, warm close; optional “stick around if you want to try the demo.”
+
+---
+
+## Flow (high level)
+
+1. **Title & you** → 2. **Plan** → 3. **What is TTS** → 4. **What is KittenTTS** *(models / HF)* → 5. **Why kitten-tts-js** *(providers + why JS)* → 6. **How built** → 7. **Eval-loop diagram** → 8. **Where + requirements** → 9. **Landscape** *(others’ models & providers)* → 10. **What’s next** → 11. **Q&A** → 12. **Thank you**
+
+## Timing sketch (adjust to slot)
+
+| Block | Minutes |
+|-------|---------|
+| Title (1) + plan (2) | 2–3 |
+| What is TTS (3) + KittenTTS (4) | 4–5 |
+| Why kitten-tts-js (5) — incl. optional demo | 4–6 |
+| Build story (6) + eval-loop diagram (7) | 4–5 |
+| Requirements / runtimes (8) + landscape (9) | 4–6 |
+| Roadmap (slide 10) | 2–3 |
+| **Q&A (slide 11)** | *as needed* |
+| **Thank you (slide 12)** | under 1 min (or hold while people leave) |
+
+---
+
+## Checklist before talk
+
+- [ ] Demo offline fallback (or tethered tab) if live site is slow
+- [ ] **Full URLs** on slide 5 (optional), **Q&A (11)**, and/or **thank you (12)** — not required on slide 1
+- [ ] **Attribution** slide or footer: KittenML / Stellon Labs + Hugging Face model cards (+ **onnx-community** if you show browser IDs)
+- [ ] **Support matrix** (Node CPU / browser WASM / WebGPU Nano-only) matches current README — skim before the talk
+- [ ] **Plan slide** (2) matches the deck order you actually built
+- [ ] **Q&A slide** (11) ready before questions; **thank you** (12) last in the deck
+- [ ] Spell-check: Compose → **Composer** (Cursor) if that’s what you used

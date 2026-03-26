@@ -1,6 +1,7 @@
 /**
  * Slide tool metadata, TTS stripping, and XML parsing helpers.
- * Stage execution uses Ollama native `tool_calls` (see slides-ollama-assistant.ts).
+ * Ollama exposes a subset of these names to the model (`OLLAMA_SLIDE_TOOLS`); the full set
+ * remains for XML tests, optional `<tools>` parsing, and `executeToolCall` (shortcuts / future use).
  * `stripToolBlocksForSpeech` / `parseToolsInner` remain for tests and for removing
  * accidental `<tools>…</tools>` from assistant text before speech.
  */
@@ -10,14 +11,10 @@ export type StreamToolCall = {
 };
 
 /**
- * Mermaid preset keys for `diagram_${key}` tools.
+ * Mermaid preset keys for `diagram_${key}` tools (each jumps to the deck slide that embeds that diagram).
  * Must match `Object.keys(DIAGRAM_PRESETS)` in `src/slides-lab-main.ts`.
  */
-export const SLIDE_DIAGRAM_PRESET_KEYS = [
-  'live_stack',
-  'reinforcement_loop',
-  'scoring_flow',
-] as const;
+export const SLIDE_DIAGRAM_PRESET_KEYS = ['reinforcement_loop'] as const;
 
 export type SlideDiagramPresetKey = (typeof SLIDE_DIAGRAM_PRESET_KEYS)[number];
 

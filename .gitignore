@@ -13,6 +13,8 @@ __pycache__/
 *.onnx
 *.npz
 .cache/
+tmp/
+artifacts/tts-eval/
 dist/
 docs/bundle.js
 docs/slides-ollama.js

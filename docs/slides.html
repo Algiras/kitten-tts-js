@@ -200,6 +200,7 @@
       flex-direction: column;
       gap: 14px;
       min-width: 0;
+      min-height: 0;
     }
 
     /* Flex + flex-basis 0 + min-height 0 so the tools block scrolls; grid 1fr was leaving odd vertical gaps */
@@ -288,6 +289,22 @@
       overflow: hidden;
     }
 
+    /*
+      Editor view: cap card height and scroll inside `.stage-main`.
+      Do not use `1fr` here — with only max-height on the card (no definite height), the fr row
+      can collapse and `overflow:hidden` on the card clips content with no scroll.
+    */
+    .presenter-main .stage-card:not(:fullscreen) {
+      max-height: min(85dvh, calc(100dvh - 11.5rem));
+    }
+
+    .presenter-main .stage-card:not(:fullscreen) .stage-main {
+      max-height: min(calc(85dvh - 8rem), calc(100dvh - 19.5rem));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
     @keyframes stage-card-bg-shift {
       0%, 100% { background-position: 0% 0%, 0% 40%; }
       50% { background-position: 0% 0%, 100% 60%; }
@@ -326,16 +343,19 @@
       --stage-pad: clamp(28px, 4vw, 56px);
       padding: var(--stage-pad);
       --stage-ctx-inset: clamp(14px, 3vmin + 10px, 40px);
-      grid-template-rows: auto 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
     }
 
     .stage-card:fullscreen .stage-main h2 {
-      max-width: min(90vw, 26ch);
+      max-width: 100%;
       font-size: clamp(2.4rem, 4.5vw, 5rem);
+      line-height: 1.18;
+      letter-spacing: -0.02em;
     }
 
     .stage-card:fullscreen .lede,
-    .stage-card:fullscreen .bullets li {
+    .stage-card:fullscreen .bullets > li,
+    .stage-card:fullscreen .bullets .bullets-sub > li {
       font-size: clamp(1.05rem, 1.5vw, 1.4rem);
     }
 
@@ -374,9 +394,10 @@
     .stage-kicker {
       font-size: 0.82rem;
       text-transform: uppercase;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.1em;
       color: #ffc3a6;
       font-weight: 700;
+      line-height: 1.35;
     }
 
     .stage-waveform {
@@ -429,12 +450,13 @@
       z-index: 1;
       min-height: 0;
       /* Reserve space for bottom chrome (PTT + captions) so titles are not covered */
-      padding-bottom: clamp(100px, 22vh, 200px);
+      padding-bottom: clamp(76px, 14vh, 150px);
     }
 
     .stage-card:fullscreen .stage-main {
-      padding-bottom: clamp(120px, 24vh, 220px);
+      padding-bottom: clamp(96px, 18vh, 180px);
       overflow-y: auto;
+      overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
     }
 
@@ -531,29 +553,148 @@
       animation: stage-caption-pulse 1.5s ease-in-out infinite;
     }
 
+    /*
+      Grid: main column consumes all space left of the glossary rail (no fixed 64ch cap — that
+      left most of fullscreen empty). Glossary column is a fixed narrow track.
+    */
+    .stage-copy-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: clamp(16px, 2.5vw, 28px);
+      width: 100%;
+      min-width: 0;
+      align-items: first baseline;
+    }
+
+    .stage-copy-row:has(#slide-gloss:not([hidden])) {
+      grid-template-columns: minmax(0, 1fr) minmax(11rem, 26ch);
+    }
+
+    /* Diagram sits on its own row under title + glossary so it can use full width */
+    .stage-copy-row .stage-copy {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .stage-copy-row .slide-gloss:not([hidden]) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .stage-copy-row #slide-diagram:not([hidden]) {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      margin-top: clamp(4px, 1.2vw, 14px);
+    }
+
     .stage-copy {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      align-items: stretch;
+      gap: clamp(18px, 2.4vw, 26px);
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .slide-gloss {
+      margin: 0;
+      padding: 0 0 0 clamp(10px, 1.4vw, 14px);
+      border-left: 1px solid rgba(255, 183, 136, 0.22);
+      font-size: clamp(0.76rem, 1.15vw, 0.86rem);
+      line-height: 1.38;
+      color: rgba(255, 247, 239, 0.78);
+      min-width: 0;
+    }
+
+    .slide-gloss-title {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255, 195, 166, 0.85);
+      margin: 0 0 8px 0;
+    }
+
+    .slide-gloss-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .slide-gloss-list li {
+      padding: 0;
+      margin: 0;
+    }
+
+    .slide-gloss-list li::before {
+      content: "";
+      display: none;
+    }
+
+    @media (max-width: 720px) {
+      .stage-copy-row,
+      .stage-copy-row:has(#slide-gloss:not([hidden])) {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+
+      .stage-copy-row .stage-copy {
+        grid-column: 1;
+        grid-row: 1;
+      }
+
+      .stage-copy-row #slide-diagram:not([hidden]) {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      /* Glossary after diagram when both exist; otherwise directly under copy */
+      .stage-copy-row .slide-gloss:not([hidden]) {
+        grid-column: 1;
+        grid-row: 2;
+      }
+
+      .stage-copy-row:has(#slide-diagram:not([hidden])) .slide-gloss:not([hidden]) {
+        grid-row: 3;
+      }
+
+      .slide-gloss {
+        max-width: 100%;
+        border-left: none;
+        border-top: 1px solid rgba(255, 183, 136, 0.18);
+        padding: clamp(12px, 2vw, 16px) 0 0 0;
+      }
+    }
+
+    .stage-copy > * {
       min-width: 0;
     }
 
     .stage-main h2 {
       margin: 0;
       font-size: clamp(1.65rem, 2.8vw, 3.25rem);
-      line-height: 1.08;
-      letter-spacing: -0.04em;
+      line-height: 1.18;
+      letter-spacing: -0.02em;
       max-width: 100%;
       text-wrap: balance;
     }
 
     .lede {
       margin: 0;
-      max-width: 58ch;
+      max-width: 100%;
       color: rgba(255, 247, 239, 0.84);
       font-size: 1.03rem;
       line-height: 1.5;
       white-space: pre-line;
+    }
+
+    /* Split summary (lede) from bullet list so the slide doesn’t read as one wall of text */
+    .stage-copy #slide-bullets:not(:empty) {
+      margin-top: 0.25rem;
+      padding-top: clamp(14px, 2vw, 22px);
+      border-top: 1px solid rgba(255, 183, 136, 0.16);
     }
 
     .bullets {
@@ -561,17 +702,79 @@
       padding: 0;
       margin: 0;
       display: grid;
-      gap: 10px;
-      max-width: 60ch;
+      gap: 12px;
+      max-width: 100%;
     }
 
-    .bullets li {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
+    /* Grid: marker column + text that may wrap without breaking alignment */
+    .bullets > li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 10px;
+      row-gap: 6px;
+      align-items: start;
       font-size: 1rem;
       color: rgba(255, 247, 239, 0.92);
       line-height: 1.45;
+    }
+
+    .bullets > li::before {
+      content: "•";
+      grid-column: 1;
+      grid-row: 1;
+      align-self: start;
+      color: #ffb68b;
+      font-size: 1.25rem;
+      line-height: 1.15;
+      margin-top: 0.12em;
+    }
+
+    .bullets > li > .bullet-body,
+    .bullets > li > .bullet-head {
+      grid-column: 2;
+      grid-row: 1;
+      min-width: 0;
+      overflow-wrap: break-word;
+      word-break: normal;
+    }
+
+    .bullets > li > ul.bullets-sub {
+      grid-column: 2;
+      grid-row: 2;
+      list-style: none;
+      padding: 0;
+      margin: 4px 0 0 0;
+      display: grid;
+      gap: 8px;
+      max-width: none;
+    }
+
+    .bullets .bullets-sub > li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 8px;
+      align-items: start;
+      font-size: 0.92em;
+      color: rgba(255, 247, 239, 0.85);
+      line-height: 1.45;
+    }
+
+    .bullets .bullets-sub > li::before {
+      content: "·";
+      grid-column: 1;
+      grid-row: 1;
+      align-self: start;
+      color: rgba(255, 183, 136, 0.75);
+      font-size: 1.15rem;
+      line-height: 1.15;
+      margin-top: 0.1em;
+    }
+
+    .bullets .bullets-sub > li > .bullet-body {
+      grid-column: 2;
+      min-width: 0;
+      overflow-wrap: break-word;
+      word-break: normal;
     }
 
     @keyframes tool-highlight-pulse {
@@ -645,62 +848,47 @@
       font-size: clamp(1rem, 1.3vw, 1.3rem);
     }
 
-    /* ---- diagram_* tool overlay (Mermaid) ---- */
-    .stage-diagram {
-      position: absolute;
-      inset: 0;
-      z-index: 8;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: center;
-      padding: clamp(12px, 2.2vw, 28px);
+    /* ---- Mermaid diagrams embedded in slide body (#slide-diagram) ---- */
+    .slide-diagram {
+      margin-top: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: min(46vh, 440px);
+      overflow: auto;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.42);
+      border: 1px solid rgba(208, 99, 47, 0.28);
       box-sizing: border-box;
-      background: rgba(24, 20, 18, 0.82);
-      backdrop-filter: blur(18px) saturate(1.4);
-      -webkit-backdrop-filter: blur(18px) saturate(1.4);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.35s ease;
     }
-    .stage-diagram.visible {
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .stage-diagram.fade-out {
-      opacity: 0;
-      transition: opacity 0.6s ease;
+
+    .slide-diagram[hidden] {
+      display: none !important;
     }
 
     .diagram-title {
       flex-shrink: 0;
-      font-size: 1.1rem;
+      font-size: 0.82rem;
       font-weight: 600;
-      color: rgba(255, 210, 170, 0.9);
-      letter-spacing: 0.04em;
-      margin-bottom: 16px;
+      color: rgba(255, 210, 170, 0.92);
+      letter-spacing: 0.06em;
+      margin-bottom: 10px;
       text-transform: uppercase;
       text-align: center;
     }
 
     .diagram-mermaid-inner {
-      flex: 1 1 auto;
-      align-self: stretch;
       width: 100%;
-      max-width: 100%;
       min-height: 0;
-      max-height: calc(100% - 8px);
-      overflow: auto;
-      padding: 4px 2px;
+      overflow: visible;
+      padding: 2px 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     .diagram-mermaid-out {
-      flex: 1 1 auto;
-      min-height: 0;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -710,44 +898,36 @@
 
     .diagram-mermaid-out svg {
       max-width: 100%;
-      max-height: 100%;
-      width: auto;
       height: auto;
-      min-height: 120px;
+      min-height: 80px;
     }
 
     .diagram-error {
       margin: 0;
       color: #ffb8a0;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       text-align: center;
-      padding: 12px;
+      padding: 8px;
     }
 
-    .stage-card:fullscreen .stage-diagram {
-      backdrop-filter: blur(24px) saturate(1.5);
-      -webkit-backdrop-filter: blur(24px) saturate(1.5);
-      padding: clamp(20px, 3vw, 48px);
+    .stage-card:fullscreen .slide-diagram {
+      max-height: min(54vh, 560px);
+      padding: clamp(16px, 2.2vw, 24px) clamp(18px, 2.5vw, 28px);
     }
 
     .stage-card:fullscreen .diagram-title {
-      font-size: clamp(1.1rem, 1.4vw, 1.5rem);
-      margin-bottom: 20px;
-    }
-
-    .stage-card:fullscreen .diagram-mermaid-inner {
-      max-height: min(calc(100dvh - 140px), calc(100% - 24px));
+      font-size: clamp(0.82rem, 1.1vw, 1rem);
+      margin-bottom: 12px;
     }
 
     .stage-card:fullscreen .diagram-mermaid-out svg {
-      max-width: min(96vw, 100%);
-      max-height: min(78dvh, 820px);
+      max-height: min(46vh, 500px);
     }
 
     .stage-fireworks {
       position: absolute;
       inset: 0;
-      /* Above diagram (8), overlay (5), and tool pulse (6) so bursts stay visible */
+      /* Above overlay (5) and tool pulse (6) so bursts stay visible */
       z-index: 12;
       width: 100%;
       height: 100%;
@@ -779,6 +959,20 @@
       letter-spacing: 0.12em;
       font-weight: 700;
       color: var(--accent-deep);
+    }
+
+    .tool-commands-ref h3.tool-commands-ref-sub {
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-size: 0.68rem;
+      color: var(--muted);
+    }
+
+    .tool-commands-ref-foot {
+      margin: 10px 0 0;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: var(--muted);
     }
 
     .tool-commands-ref ul {
@@ -951,13 +1145,6 @@
       right: clamp(16px, 3vw, 32px);
       font-size: 0.8rem;
       padding: 6px 14px;
-    }
-
-    .bullets li::before {
-      content: "•";
-      color: #ffb68b;
-      font-size: 1.25rem;
-      line-height: 1;
     }
 
     .slide-controls {
@@ -1424,8 +1611,16 @@
         justify-content: flex-start;
       }
 
+      .presenter-main .stage-card:not(:fullscreen) {
+        max-height: min(78dvh, calc(100dvh - 9rem));
+      }
+
+      .presenter-main .stage-card:not(:fullscreen) .stage-main {
+        max-height: min(calc(78dvh - 7.5rem), calc(100dvh - 16.5rem));
+      }
+
       .stage-card {
-        min-height: 440px;
+        min-height: min(440px, calc(100dvh - 10rem));
         --stage-pad: 22px;
         padding: var(--stage-pad);
       }
@@ -1580,10 +1775,14 @@
       </div>
 
       <div class="stage-main">
-        <div class="stage-copy">
-          <h2 id="slide-title"></h2>
-          <p class="lede" id="slide-lede"></p>
-          <ul class="bullets" id="slide-bullets"></ul>
+        <div class="stage-copy-row">
+          <div class="stage-copy">
+            <h2 id="slide-title"></h2>
+            <p class="lede" id="slide-lede"></p>
+            <ul class="bullets" id="slide-bullets"></ul>
+          </div>
+          <aside class="slide-gloss" id="slide-gloss" hidden aria-label="Glossary for terms on this slide"></aside>
+          <div class="slide-diagram" id="slide-diagram" hidden></div>
         </div>
       </div>
 
@@ -1597,7 +1796,6 @@
       </div>
 
       <div class="stage-overlay" id="stage-overlay"></div>
-      <div class="stage-diagram" id="stage-diagram"></div>
       <canvas class="stage-fireworks" id="stage-fireworks" aria-hidden="true"></canvas>
 
       <div class="tool-activity" id="tool-activity" aria-hidden="true">
@@ -1607,7 +1805,7 @@
 
       <canvas class="stage-waveform" id="stage-waveform" aria-hidden="true"></canvas>
 
-      <div class="stage-slide-ref" id="stage-slide-ref" aria-hidden="true">1 / 15</div>
+      <div class="stage-slide-ref" id="stage-slide-ref" aria-hidden="true">1 / 12</div>
 
       <!-- Invisible refs for JS state tracking -->
       <div id="stage-orb-trigger" hidden></div>
@@ -1626,16 +1824,19 @@
           <p id="narrator-live-text"></p>
         </div>
         <div class="tool-commands-ref" id="tool-commands-ref" hidden>
-          <h3>Kiki tools (voice)</h3>
+          <h3>Kiki (LLM) tools</h3>
           <ul>
             <li><code>highlight_text</code> — <code>text</code></li>
             <li><code>emphasize_bullet</code> — <code>index</code> (1-based)</li>
             <li><code>go_to_slide</code> — <code>slide_number</code></li>
-            <li><code>show_overlay</code> — <code>text</code>; duration enum 3/5/8/10/15s</li>
-            <li><code>set_voice</code> — <code>voice</code> (Bella … Leo)</li>
-            <li><code>diagram_live_stack</code>, <code>diagram_reinforcement_loop</code>, <code>diagram_scoring_flow</code> — no args. <strong>Shortcuts:</strong> <kbd>Alt</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>) — press again to <strong>close</strong> that diagram. <kbd>Alt</kbd>+<kbd>0</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd> closes <strong>any</strong> diagram.</li>
-            <li><code>fireworks</code> — duration enum 1–8s. <strong>Shortcut:</strong> <kbd>Alt</kbd>+<kbd>4</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd>. <kbd>Esc</kbd>: close diagram if open, else exit <strong>presentation</strong> (fullscreen), else narrator reset (<kbd>Shift</kbd>+<kbd>Esc</kbd> turns narrator off).</li>
+            <li><code>fireworks</code> — optional <code>duration_seconds</code> 1–8s. <strong>Shortcut:</strong> <kbd>Alt</kbd>+<kbd>4</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd>.</li>
           </ul>
+          <h3 class="tool-commands-ref-sub">Presenter only (not in the LLM tool list)</h3>
+          <ul>
+            <li>Voice &amp; model: toolbar / hidden config — Kiki cannot call <code>set_voice</code>.</li>
+            <li>Eval-loop diagram slide: <kbd>Alt</kbd>+<kbd>1</kbd> (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>) jumps to the slide with embedded Mermaid.</li>
+          </ul>
+          <p class="tool-commands-ref-foot"><kbd>Esc</kbd>: exit <strong>presentation</strong> (fullscreen), else narrator reset (<kbd>Shift</kbd>+<kbd>Esc</kbd> turns narrator off).</p>
         </div>
         <div id="assistant-debug-panel" class="assistant-debug-panel" hidden>
           <div class="assistant-debug-header">

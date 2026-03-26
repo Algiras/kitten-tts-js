@@ -938,6 +938,12 @@
       });
     }
 
+    function isCoarseMobileUa() {
+      return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent || '',
+      );
+    }
+
     // State
     let ttsLoaded = false;
     let lastBlob = null;
@@ -1606,10 +1612,11 @@
 
       const runtime = runtimeSelect.value;
       const useWasmSettings = runtime === 'cpu';
-      const wasmThreads = useWasmSettings && wasmThreadsSelect.value !== 'auto'
+      let wasmThreads = useWasmSettings && wasmThreadsSelect.value !== 'auto'
         ? Number(wasmThreadsSelect.value)
         : undefined;
       const wasmSimd = useWasmSettings ? Boolean(wasmSimdToggle.checked) : undefined;
+      if (isCoarseMobileUa()) wasmThreads = 1;
 
       setStatus(`Loading model (${sizeStr}) with runtime ${runtime.toUpperCase()}…`, 'loading');
       generateBtn.disabled = true;

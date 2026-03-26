@@ -7,188 +7,285 @@ import {
   shouldIgnoreSttForPttAccumulation,
 } from './slides-narrator-state.js';
 
-/** Section rail + timing; separate from on-slide copy. */
+/** Section rail + timing; separate from on-slide copy. Aligned with docs/talk-outline.md */
 const deckMeta = [
-  { section: '', duration: '1 min', takeaway: 'Talk title and speaker only — let it land before the agenda.', artifacts: [], audienceQuestion: '' },
-  { section: 'Vilnius.js opening', duration: '2 min', takeaway: 'The talk is both the project story and a live demo of the stack.', artifacts: ['kitten-tts-js', 'LLM-assisted build loop', 'Live browser deck'], audienceQuestion: 'What part of the project genuinely needed LLM help instead of normal engineering?' },
-  { section: 'Why port it', duration: '2 min', takeaway: 'The port matters because it moves TTS into the environments JavaScript developers actually use.', artifacts: ['Browser runtime', 'Node runtime', 'Portable demo surface'], audienceQuestion: 'Why not just keep the original runtime and call it from JavaScript?' },
-  { section: 'LLM leverage', duration: '2 min', takeaway: 'LLMs helped most where iteration speed mattered, not where trust could be outsourced.', artifacts: ['TypeScript refactors', 'Runtime debugging', 'Docs and test support'], audienceQuestion: 'Where did LLM advice save time, and where did it mislead you?' },
-  { section: 'Live stack', duration: '2 min', takeaway: 'The presentation deck is the orchestration layer for all three channels.', artifacts: ['KittenTTS worker', 'Browser STT', 'Slide-aware LLM adapter'], audienceQuestion: 'Why keep everything in the deck instead of splitting it into separate tools?' },
-  { section: 'Reinforcement loop', duration: '3 min', takeaway: 'The system should optimize for what reaches human ears, not only for what exists as text.', artifacts: ['LLM answer', 'KittenTTS audio', 'Whisper-style transcript'], audienceQuestion: 'Why is hearing the audio back better than just checking the generated text?' },
-  { section: 'Audio correctness', duration: '2 min', takeaway: 'If the product is spoken output, correctness has to be measured on the spoken output.', artifacts: ['Audio transcript', 'Pronunciation drift', 'Delivery quality'], audienceQuestion: 'What kinds of errors show up only when you evaluate the spoken answer?' },
-  { section: 'Scoring loop', duration: '2 min', takeaway: 'The feedback loop gets stronger once spoken output becomes measurable input.', artifacts: ['Transcript scoring', 'Slide intent anchors', 'Retry or revise decision'], audienceQuestion: 'What does the system do when the spoken answer fails the correctness check?' },
-  { section: 'Live demo surface', duration: '2 min', takeaway: 'The talk UI itself is part of the demo, not just its container.', artifacts: ['Presenter notes', 'Push-to-talk', 'Waveform + copresenter'], audienceQuestion: 'How much UI is enough before the demo starts distracting from the talk?' },
-  { section: 'Practical rubric', duration: '2 min', takeaway: 'Text quality alone is not enough for a spoken system.', artifacts: ['Grounding checks', 'Speakability checks', 'Transcript checks'], audienceQuestion: 'How do you score “sound good when spoken” without making the rubric vague?' },
-  { section: 'Engineering lessons', duration: '2 min', takeaway: 'Reliability came from coordinating multiple messy channels, not from a single model choice.', artifacts: ['Capability checks', 'Fallback paths', 'Audio-state sync'], audienceQuestion: 'What browser/runtime issue caused the most pain during the port?' },
-  { section: 'What is next', duration: '3 min', takeaway: 'Stable interfaces let the project evolve without rewriting the whole demo every time.', artifacts: ['Slide UI', 'LLM adapter', 'Audio evaluator'], audienceQuestion: 'If browser models improve tomorrow, what part of the stack changes first?' },
-  { section: 'Close', duration: '2 min', takeaway: 'Spoken systems get better when they can hear themselves and score what they actually delivered.', artifacts: ['Narration loop', 'Listen-back loop', 'Audio correctness'], audienceQuestion: 'What would I build next if I focused purely on the reinforcement and evaluation loop?' },
-  { section: 'Questions', duration: 'as needed', takeaway: 'Make space for the room — technical, meta, or about the live demo.', artifacts: ['kitten-tts-js repo', 'This deck as demo', 'Ollama + Kiki setup'], audienceQuestion: 'What do you want to know that the talk did not cover?' },
-  { section: 'Thank you', duration: '1 min', takeaway: 'Close warmly and point people at the project.', artifacts: ['GitHub: kitten-tts-js', 'Try the deck with ?debug=1'], audienceQuestion: null },
+  { section: 'Opening', duration: '1 min', takeaway: 'Talk title sets the theme; name and links support, not the headline.', artifacts: [], audienceQuestion: '' },
+  { section: 'Plan', duration: '1 min', takeaway: 'Audience knows the arc: TTS → KittenTTS → port → build → runtimes → landscape → next.', artifacts: ['Talk outline'], audienceQuestion: '' },
+  { section: 'What is TTS', duration: '2 min', takeaway: 'Neural vs browser TTS vocabulary is set.', artifacts: ['speechSynthesis', 'ONNX TTS'], audienceQuestion: 'When is built-in TTS enough vs bringing your own model?' },
+  { section: 'KittenTTS', duration: '2 min', takeaway: 'Upstream is KittenML on Hugging Face; JS port is runtime only.', artifacts: ['KittenML/KittenTTS', 'Hugging Face weights'], audienceQuestion: 'Who owns the checkpoints vs the runtime?' },
+  { section: 'kitten-tts-js', duration: '4 min', takeaway: 'KittenML/… in Node vs onnx-community/… in browser; why JavaScript.', artifacts: ['npm package', 'ORT Web', 'WebGPU Nano'], audienceQuestion: 'Which HF ID do I use in Node vs the browser?' },
+  {
+    section: 'Build process',
+    duration: '3 min',
+    takeaway: 'Agents plus Whisper transcript checks, waveform gates, and browser runs — not “sounds fine”.',
+    artifacts: ['Cursor / Claude', 'Whisper STT vs reference', 'Waveform / level gates', 'Playwright', 'whisper-tts-eval skill'],
+    audienceQuestion: 'How do you regression-test TTS without golden ears?',
+  },
+  {
+    section: 'Eval loop',
+    duration: '1 min',
+    takeaway: 'One full-screen loop: change → WAV → checks → ship or iterate.',
+    artifacts: ['Mermaid diagram'],
+    audienceQuestion: '',
+  },
+  { section: 'Requirements', duration: '3 min', takeaway: 'Support matrix: Node CPU; browser WASM tiers; WebGPU Nano-only.', artifacts: ['secure context', 'model cache'], audienceQuestion: 'What breaks on Safari or without SharedArrayBuffer?' },
+  { section: 'Landscape', duration: '3 min', takeaway: 'Self-host JS vs cloud vs Piper — trade who hosts the model.', artifacts: ['Web Speech', 'Cloud APIs', 'Piper'], audienceQuestion: 'When is cloud TTS worth it over npm + static hosting?' },
+  {
+    section: 'Roadmap',
+    duration: '2 min',
+    takeaway: 'Eval docs, deck scoring, worker docs, CI golden WAV + STT, community.',
+    artifacts: ['GitHub issues', 'whisper-tts-eval'],
+    audienceQuestion: 'What would you merge first?',
+  },
+  { section: 'Q&A', duration: 'as needed', takeaway: 'Links visible; seed questions if the room is quiet.', artifacts: ['Live demo URL', 'Repo URL'], audienceQuestion: 'What did we not cover?' },
+  { section: 'Thank you', duration: '1 min', takeaway: 'Credit KittenML; point at the repo.', artifacts: ['Algiras/kitten-tts-js', 'KittenML attribution'], audienceQuestion: null },
 ];
 
 const deck = [
   {
-    title: 'kitten-tts: Real-time TTS on (almost) anything',
-    lede: 'Algimantas Krasauskas\nWix AI Engineer\nKiki — AI presenter (live voice for this deck)',
+    title: 'kitten-tts: real-time TTS (text-to-speech) on (almost) anything',
+    lede: 'Algimantas Krasauskas · AI Engineer · Wix\nkitten-tts-js — Kiki (AI assistant — copresenter for this deck) is in the loop.',
+    bullets: ['🐙  https://github.com/Algiras', '💼  https://www.linkedin.com/in/asimplek/'],
+    glossary: ['TTS — text-to-speech'],
+    notes: 'Lead with the title; then thanks, name, role, Wix. Project repo URLs stay on Q&A / thank you — here is how to find you.',
+    llmNotes:
+      'At most one warm line in character if Algimantas speaks; do not spell out long URLs unless asked — say “Algiras on GitHub” or “LinkedIn asimplek” if needed (on slide: octocat + briefcase emojis).',
+  },
+  {
+    title: 'What we’ll talk about',
+    lede: 'A straight line through the port so “why JavaScript” lands after TTS (text-to-speech) and KittenTTS are defined.',
+    bullets: [
+      'What is TTS (text-to-speech)?',
+      'What is KittenTTS? — models, voices, Hugging Face (HF — public model hub) weights',
+      'Why kitten-tts-js — providers, runtimes, why JavaScript (JS)',
+      'How it was built — agents; Whisper (OpenAI STT model family), waveform (audio signal), browser evals',
+      'Where it runs — Node.js vs browser, requirements',
+      'What else exists — stacks and tradeoffs',
+      'What’s next → Q&A (questions & answers)',
+    ],
+    glossary: [
+      'HF — Hugging Face model hub',
+      'Whisper — OpenAI speech-to-text model family',
+      'Node.js — JavaScript runtime on the server',
+      'Evals — automated checks on audio, transcripts, browser',
+    ],
+    notes: '30–45 seconds. Optional: mention a short demo when you reach the port slide.',
+    llmNotes:
+      'If asked for the roadmap in one breath, use the seven bullets in order (detail after each em dash). Slides 6–7 are build story then eval-loop diagram alone; slide 10 is what’s next (bullets only, no diagram). Keep it under two sentences unless asked.',
+  },
+  {
+    title: 'What is TTS?',
+    lede: 'Text-to-speech turns text into audio (the waveform you hear). Neural (ML-trained) systems learn text → waveform; classical systems use hand-tuned rules and smaller models.',
+    bullets: [
+      'Rough pipeline: text → linguistic features (pronunciation / prosody) → acoustic model (predicts sound) → waveform.',
+      'Browser speechSynthesis (built-in Web Speech API — TTS in the tab): zero setup, but fixed voices, uneven quality, no WAV (waveform audio file) pipeline, hard to A/B (compare two setups) in your stack.',
+      'Neural ONNX (Open Neural Network Exchange) in JS: repeatable output, export, same code path in Node and web when you need it.',
+    ],
+    glossary: [
+      'Waveform — audio signal over time',
+      'Linguistic features — pronunciation / prosody hints for the model',
+      'speechSynthesis — browser Web Speech API (built-in TTS)',
+      'ONNX — open format for exchanging ML models across runtimes',
+    ],
+    notes: 'About one minute. Built-in TTS is great for a11y (accessibility); bring your own model when you need control.',
+    llmNotes: 'Contrast “sounds fine in the OS” vs “same voice and graph everywhere I ship JS.”',
+  },
+  {
+    title: 'What is KittenTTS?',
+    lede: 'KittenTTS (KittenML / Stellon Labs) is the Python reference. The JavaScript port runs their ONNX (Open Neural Network Exchange) exports — same research, different runtime.',
+    bullets: [
+      'StyleTTS2-style — same neural TTS architecture family as the research line; kitten-tts-js runs exported ONNX graphs, not Python training code.',
+      'Tiers: nano, micro, mini — model sizes / quality tradeoff vs cloud TTS footprint.',
+      'Source of truth for weights (checkpoints — saved trained parameters): KittenML on Hugging Face (HF — model hub).',
+      'Voices in the port: Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo.',
+    ],
+    glossary: [
+      'StyleTTS2 — neural TTS architecture family (research lineage)',
+      'Checkpoints — saved weights after training',
+      'HF — Hugging Face (public weights hub)',
+    ],
+    notes: 'Separate “who ships checkpoints” from “how we load them in JS” on the next slide. Apache-2.0 if the room asks.',
+    llmNotes: 'If asked “is this your model?”, say no — runtime port; credit KittenML for architecture and voices.',
+  },
+  {
+    title: 'Why kitten-tts-js?',
+    lede: 'Unofficial TypeScript (typed superset of JavaScript) port — npm install kitten-tts-js. Same voices as upstream; runs where your JS already lives.',
+    bullets: [
+      'ONNX Runtime (ORT) in-process: Node CPU · browser WASM (WebAssembly; + SIMD / threads when allowed) · WebGPU when available.',
+      'Streaming: async generator (yields audio chunks as they are ready), sentence chunks · cache after first download (Node dir + browser Cache API — persists fetched model bytes).',
+      'Node: KittenML/… Hugging Face (HF) model IDs, CPU execution.',
+      'Browser WASM: onnx-community/KittenTTS-…-ONNX — Nano, Micro, Mini tiers.',
+      'Browser WebGPU: Nano ONNX only today; Micro/Mini stay on WASM (ORT WebGPU + int8 limits).',
+      'Why JS (JavaScript): one language for lib + demo + tests; earlier first chunk; static pages and Web Workers (background JS threads); no Python service in your app path.',
+    ],
+    glossary: [
+      'ORT — ONNX Runtime (runs .onnx models)',
+      'TypeScript — typed superset of JavaScript',
+      'Cache API — browser storage for fetched model bytes',
+      'Web Workers — JavaScript off the UI thread',
+    ],
+    notes: 'Name the two paste targets: KittenML/… vs onnx-community/…. Demo + links fit here or on Q&A / thank you.',
+    llmNotes: 'Honest tradeoff: Python is the reference; JS buys distribution and integration, not automatic win vs every cloud voice.',
+  },
+  {
+    title: 'How it was built',
+    lede: 'Agents and editors sped up the boring parts; verification stayed on real audio and browsers.',
+    bullets: [
+      'Cursor, Composer, Claude Code — IDE-integrated coding agents (spec → code → fix loops).',
+      'Whisper (or similar STT — speech-to-text) on synthetic WAV (waveform audio) — transcript vs reference text; normalize, diff; optional WER (word error rate).',
+      'Waveform / level gates — silence, peak, RMS (root mean square level) on fixed prompts so bad exports fail without listening.',
+      'Playwright or browser-agent runs — real WASM (WebAssembly) / WebAudio path; not “green in Node” only.',
+      'Repo skill whisper-tts-eval — same loop in Claude / Cursor for `/tts-eval` and `/whisper-eval`.',
+    ],
+    glossary: [
+      'WER — word error rate (STT vs reference)',
+      'Playwright — browser automation for real WASM paths',
+      'WASM — WebAssembly in the browser',
+    ],
+    notes: 'Story beat: I did not trust “sounds fine” — I wanted comparable strings and signals across commits. Next slide is the loop diagram only.',
+    llmNotes: 'If asked for one habit to steal: measure audio output, not only text logs.',
+  },
+  {
+    title: 'Build / eval loop',
+    lede: 'One loop: synthesize audio → run STT and waveform gates → ship only when everything passes; otherwise iterate.',
     bullets: [],
-    notes: 'Title slide: talk name, author, role, plus Kiki named as the AI presenter. One optional spoken beat if you want to point at the voice — then advance when ready.',
-    llmNotes: 'First slide names you on screen as Kiki, the AI presenter. If Algimantas speaks here, at most one short line in character; otherwise stay quiet. Do not list agenda unprompted.',
+    glossary: ['STT — speech-to-text', 'WAV — waveform audio file', 'Level gates — RMS / silence / peak checks'],
+    notes: 'Full-width diagram below the title row; narrate the cycle once.',
+    llmNotes: 'One spoken sentence on the loop; let the graphic do the work.',
+    diagram: 'reinforcement_loop',
   },
   {
-    title: 'Tonight: a port, LLM leverage, and a deck that demos itself.',
-    lede: 'This is the story of building kitten-tts-js, where LLMs helped move faster on the JavaScript port, and where the talk itself now runs as a live KittenTTS + LLM + browser-STT demo.',
+    title: 'Where it runs — requirements',
+    lede: 'Models are tens of MB (megabytes) — plan for download, cache, and runtime capability — not a tiny npm (Node package manager) tarball alone.',
     bullets: [
-      'Port lightweight TTS into a JavaScript and browser-friendly package.',
-      'Use LLMs as coding and debugging leverage, not just as product garnish.',
-      'Turn the talk into a live system that can speak, listen, and answer.',
+      'Node (Node.js): supported release from the repo; CPU threads configurable; first run fetches HF (Hugging Face) weights then caches.',
+      'Browser: modern evergreen (auto-updated Chrome / Firefox / Safari / Edge); HTTPS (secure HTTP) or localhost for audio + fetch.',
+      'WASM (WebAssembly): SIMD and multi-threading when the page and ORT (ONNX Runtime) build allow.',
+      'WebGPU: capable GPU (graphics processor) + browser; GPU path is Nano-only; Micro/Mini WASM.',
+      'Offline only after the cache warms — npm script diagnose:node-runtime (repo helper) for implementers.',
     ],
-    notes: 'Start with the audience and the promise. Vilnius.js should immediately know this is about shipping a practical JS port, using LLMs as part of the build loop, and then dogfooding the result inside the presentation itself.',
-    llmNotes: 'Open with energy. Help establish three anchors: JS port, LLM-assisted build process, and the live deck running KittenTTS plus STT plus LLM. If asked for a summary, return the title, why it matters to JavaScript developers, and what the audience will see in the demo.',
+    glossary: [
+      'Evergreen — auto-updated Chrome / Firefox / Safari / Edge',
+      'SIMD — CPU parallel math (faster WASM)',
+      'HTTPS — HTTP over TLS (secure context)',
+    ],
+    notes: 'One-sentence matrix: Node + KittenML + CPU; browser + onnx-community + WASM for all tiers; GPU only Nano.',
+    llmNotes: 'If someone says “Safari?”, answer briefly: WebGPU/WASM variance — check current ORT + browser matrix.',
   },
   {
-    title: 'I wanted KittenTTS in JavaScript because the browser is where the interesting demos live.',
-    lede: 'Node.js is useful, but the fun starts when TTS runs in a browser tab, inside demos, experiments, devtools, and weird prototypes that do not want a Python backend.',
+    title: 'Landscape — models, providers, requirements',
+    lede: 'Pick axes: who hosts the model, and what you must ship (API — application programming interface — keys, disk, WASM, GPU).',
     bullets: [
-      'JavaScript makes the model accessible to frontend and full-stack hackers.',
-      'The browser unlocks instant demos, shareable repros, and weird interface experiments.',
-      'A tiny, portable TTS runtime is more interesting when it can run almost anywhere.',
+      'Web Speech API — OS (operating system) voices; weakest control and consistency.',
+      'kokoro-js (small JS TTS library) / ONNX (Open Neural Network Exchange)-in-JS peers — compare size, license, voice count.',
+      'Cloud TTS (ElevenLabs, Google, Azure, OpenAI, …) — API key, billing, egress (network out); often top quality.',
+      'Self-host server (Piper — open local TTS engine; containers — e.g. Docker) — ops heavy; not “static GitHub Pages only”.',
+      'Python KittenTTS — same weights; different deployment than npm (Node package manager) + static hosting.',
     ],
-    notes: 'This is the origin story for the repo itself. Keep it practical: portability, hackability, and browser demos are the real motivation, not just the novelty of another port.',
-    llmNotes: 'Emphasize browser-native demos and developer ergonomics. If the presenter asks for elaboration, provide examples like embedding TTS in playgrounds, live demos, browser tools, and experimental interfaces without requiring a Python service.',
+    glossary: [
+      'kokoro-js — lightweight JS / ONNX TTS option',
+      'Piper — open self-hosted TTS engine',
+      'Egress — billable / metered network out',
+    ],
+    notes: 'Position kitten-tts-js: self-hosted small ONNX, JS-native — not always replace cloud TTS.',
+    llmNotes: 'If asked “what should I use?”, ask back: budget, privacy, offline, and who maintains the runtime.',
   },
   {
-    title: 'LLMs were most useful as acceleration on ugly engineering edges.',
-    lede: 'The value was not “ask it to build the project.” The value was using LLMs to move faster through ONNX quirks, TypeScript cleanup, browser runtime issues, tests, and documentation rough edges.',
+    title: 'What’s next?',
+    lede: 'The port is useful when the loop around spoken output (TTS in your product) keeps getting tighter.',
     bullets: [
-      'Translate messy runtime behavior into concrete debugging hypotheses.',
-      'Refactor and explain TypeScript boundaries faster than starting from a blank editor.',
-      'Use LLMs as a pair engineer while still verifying every runtime claim.',
+      'Document Whisper + waveform evals end-to-end — thresholds, fixtures, CI (continuous integration) hooks.',
+      'Stronger listen-back / scoring in this deck lab (transcript vs intent, not only waveforms).',
+      'Docs and examples for Web Worker layout (TTS off the UI thread) and streaming UX (user experience — chunk-by-chunk audio).',
+      'Golden WAV (waveform audio) + transcript baselines in CI; fail PRs (pull requests) when STT (speech-to-text) or level checks drift.',
+      'Community: github.com/Algiras/kitten-tts-js',
     ],
-    notes: 'Be honest here. The LLM did not magically solve the hard parts, but it reduced friction on the repetitive and investigative parts of the port. That credibility will matter to the audience.',
-    llmNotes: 'Keep the tone grounded. Highlight that LLMs helped with iteration speed, debugging hypotheses, refactors, docs, and tests, but never replaced verification. If the audience asks for a concrete example, mention ONNX runtime quirks, TypeScript cleanup, or browser build issues.',
-  },
-  {
-    title: 'The demo stack is simple on purpose: KittenTTS + browser STT + an LLM.',
-    lede: 'The talk deck itself is now the integration surface. KittenTTS speaks the answer, browser STT captures speech, and an LLM reasons over the active slide instead of chatting in a vacuum.',
-    bullets: [
-      'KittenTTS handles the output voice path.',
-      'Browser STT handles spoken input and spoken-output transcription hooks.',
-      'The LLM stays grounded in slide context through an explicit adapter boundary.',
+    glossary: [
+      'CI — continuous integration (automated test on each change)',
+      'PR — pull request (proposed code change)',
+      'Web Worker — background JS thread (TTS off UI)',
     ],
-    notes: 'This is the first place to anchor the stack clearly for the audience. Keep it diagrammatic and easy to remember: reason, speak, hear, score.',
-    llmNotes: 'Describe the stack as a four-step flow: LLM reasons over slide context, KittenTTS speaks, browser STT listens, and the system scores what was actually said. Keep explanations compact and avoid drifting into infrastructure detail unless asked.',
-  },
-  {
-    title: 'The main idea is a reinforcement cycle: the system listens to what KittenTTS actually said.',
-    lede: 'Text output is not enough. The interesting loop begins after the LLM response is spoken, because the audio channel can drift from the intended answer in ways that text-only checks never see.',
-    bullets: [
-      'LLM generates an answer from the current slide context.',
-      'KittenTTS turns that answer into actual speech.',
-      'Whisper-style STT hears the audio back so the system can judge what really happened.',
-    ],
-    notes: 'This is one of the core points you said you want to cover. Slow down here and make the loop explicit: prompt, answer, speech, hearing, scoring, iteration. That is the heart of the talk.',
-    llmNotes: 'This is a priority slide. If the presenter asks for help, restate the reinforcement cycle clearly and sequentially: prompt, generated answer, spoken audio, Whisper-style listen-back, transcript scoring, improved next step. Keep the explanation concrete rather than academic.',
-  },
-  {
-    title: 'Evaluating the audio channel is different from evaluating the text channel.',
-    lede: 'The LLM may produce a perfectly acceptable text answer, but the spoken version can still fail through pacing, pronunciation, truncation, timing, or emphasis that changes the meaning.',
-    bullets: [
-      'Pronunciation mistakes can change factual correctness.',
-      'Prosody and pacing can make a technically correct answer sound wrong or awkward.',
-      'Streaming or buffering issues can damage the final delivered message.',
-    ],
-    notes: 'This is your other main point. Emphasize that the audio channel is its own system with its own failure modes. That is why transcript-based feedback from spoken output matters so much.',
-    llmNotes: 'Focus on audio-specific failure modes: pronunciation drift, pacing issues, truncation, buffering, emphasis changes, and anything that makes a spoken answer semantically weaker than the source text. If asked for correctness criteria, tie them back to what the listener actually heard.',
-  },
-  {
-    title: 'Once Whisper hears the answer, the system can score what came out of the speaker.',
-    lede: 'The transcript from the audio channel becomes a measurable artifact. That lets the system compare intent versus delivered speech and decide whether a response should be accepted, revised, or retried.',
-    bullets: [
-      'Compare transcript content against the expected factual anchors of the slide.',
-      'Score whether the answer stayed on topic and kept the right detail level.',
-      'Feed that judgment back into the next prompt or tuning pass.',
-    ],
-    notes: 'Describe this as a reinforcement cycle in practical terms, not in academic RL jargon. It is iterative improvement using observed spoken output as feedback.',
-    llmNotes: 'Help the presenter explain that the transcript becomes a measurable artifact. Offer phrasing like: “Once speech becomes text again, we can compare delivered meaning against intended meaning and decide whether to retry, revise, or accept.”',
-  },
-  {
-    title: 'That is why this talk runs inside a deck that can speak, listen, and answer.',
-    lede: 'Instead of describing the architecture in abstract terms, the presentation itself becomes the proof: the slide can be narrated, the audience can ask something, and the system can answer through the same interface.',
-    bullets: [
-      'Slides stay clean for the audience while presenter tools stay nearby.',
-      'KittenTTS can read the slide or private notes on demand.',
-      'Push-to-talk, waveform, and Kiki give a visible sense of listen / think / speak.',
-    ],
-    notes: 'The UI is intentionally minimal on stage: waveform when the copresenter talks, tool hints off-slide. The audience should feel the loop without reading a dashboard.',
-    llmNotes: 'Describe presence without over-explaining UI. States map roughly to: idle, listening (mic), thinking (LLM), speaking (TTS + waveform). Keep it concrete and short.',
-  },
-  {
-    title: 'My quality bar became: grounded, speakable, and correct over the audio channel.',
-    lede: 'For this project, a good answer is not just factually right. It must stay grounded in the slide, sound natural when KittenTTS says it, and survive the listen-back evaluation without semantic drift.',
-    bullets: [
-      'Grounded in the active slide and the scope of the talk.',
-      'Short enough and clear enough to sound good in speech.',
-      'Close enough to the intended answer after audio transcription.',
-    ],
-    notes: 'Keep this practical and memorable. These are the criteria that shaped the live demo and the kind of answer you want the audience to hear during the session.',
-    llmNotes: 'If the presenter wants help answering quality questions, use the three-part rubric: grounded in slide context, speakable by KittenTTS, and still correct after listen-back transcription. Prefer concise, operational wording over abstract quality language.',
-  },
-  {
-    title: 'The hard parts were orchestration, trust, and runtime weirdness.',
-    lede: 'The project got interesting where multiple channels met: model output, TTS synthesis, audio playback, STT transcription, and browser constraints. That is where the real engineering lived.',
-    bullets: [
-      'Browser capabilities vary, so degradation paths must feel intentional.',
-      'Speech, transcript, and slide state have to stay aligned.',
-      'Trust comes from visible boundaries and repeatable listen-back evaluation, not from marketing claims.',
-    ],
-    notes: 'This is a good slide to resonate with Vilnius.js. The interesting part is not “AI magic.” It is getting real browser systems to behave predictably enough that you trust them during a live talk.',
-    llmNotes: 'Lean into practical engineering pain: browser capabilities, audio-state synchronization, runtime fallback behavior, and trust under live demo conditions. If the presenter asks for one concrete pain point, give a browser/runtime example rather than something abstract.',
-  },
-  {
-    title: 'The architecture is now ready for stronger local models and better audio evaluation.',
-    lede: 'The point of keeping the boundaries explicit is that I can now swap the reasoning model, improve listen-back scoring, and keep the slide system itself stable.',
-    bullets: [
-      'Keep the stage, narration, and controls stable.',
-      'Swap the LLM runtime behind the adapter seam when better browser models land.',
-      'Feed transcript scores back into authoring, prompting, and evaluation loops.',
-    ],
-    notes: 'This keeps the ending optimistic and concrete. You are not done, but the architecture is now at the point where model improvements and evaluation improvements can happen independently.',
-    llmNotes: 'If the presenter asks about next steps, prioritize stronger browser models, richer audio correctness evaluation, and keeping the UI/orchestration layer stable. Frame the architecture as ready for iteration rather than “finished.”',
-  },
-  {
-    title: 'The real point is not just TTS in JS, but a feedback loop for spoken interfaces.',
-    lede: 'kitten-tts-js started as a port, but it became a way to think about spoken systems: generate an answer, speak it, hear it back, and judge what actually reached the listener.',
-    bullets: [
-      'Build the runtime so it works in the places JS developers actually ship.',
-      'Use LLMs to accelerate the build loop without pretending they replace engineering judgment.',
-      'Evaluate the audio channel if the product is ultimately heard, not just read.',
-    ],
-    notes: 'Close the technical arc by returning to the title. “Real-time TTS on (almost) anything” is the hook; the deeper claim is portable TTS plus listen-back evaluation.',
-    llmNotes: 'End the technical story with the reinforcement idea, not just the port. If the presenter asks for a closing summary before Q&A, say that kitten-tts-js made real-time TTS portable, and that portability enables spoken systems that can hear themselves and evaluate the audio channel.',
+    notes: 'Bridge to Q&A; optional ?debug=1 on this lab if you showed assistant tooling.',
+    llmNotes: 'Keep forward-looking but concrete — no vapor roadmap.',
   },
   {
     title: 'Questions?',
-    lede: 'Technical depth, the live demo, the port, or “why bother with audio at all” — happy to go wherever the room wants.',
+    lede: 'HF (Hugging Face) IDs, WebGPU vs WASM (WebAssembly), cloud vs self-host — happy to go deep.',
     bullets: [
-      'kitten-tts-js and running TTS in the browser or Node.',
-      'How Kiki, Ollama, and this deck fit together.',
-      'Reinforcement / listen-back ideas beyond this talk.',
+      'Live demo: algiras.github.io/kitten-tts-js',
+      'Repo: github.com/Algiras/kitten-tts-js',
+      'npm (Node package manager): kitten-tts-js',
     ],
-    notes: 'Pause and look at the room. If silence, offer one prompt: e.g. ONNX vs WASM tradeoffs, or how you’d score spoken answers in production.',
-    llmNotes: 'This is Q&A. Keep answers short and spoken-friendly. If someone asks something off-slide, you may use tools sparingly (e.g. highlight_text) only if it helps the room. Otherwise just answer. Repeat or rephrase unclear questions for the audience.',
+    glossary: ['HF — Hugging Face model IDs', 'WASM vs WebGPU — CPU bytecode path vs GPU path'],
+    notes: 'Stay on this slide while answering. If silence, seed: which HF ID in Node vs browser?',
+    llmNotes: 'Short answers. Tools only if they help the room see a phrase on screen.',
   },
   {
     title: 'Thank you',
-    lede: 'Thanks for having me — and thanks for listening while this deck did its weird little live thing.',
+    lede: 'kitten-tts-js — JavaScript (JS) port of KittenTTS.',
     bullets: [
-      'kitten-tts-js is on GitHub — issues and experiments welcome.',
-      'This talk was built with LLM help on the port and dogfooded as the demo.',
-      'Enjoy the rest of Vilnius.js.',
+      'github.com/Algiras/kitten-tts-js',
+      'Thanks to KittenML / KittenTTS for models and voices.',
+      'Try this deck with ?debug=1 (verbose assistant / tool logs in the lab).',
     ],
-    notes: 'Smile, stop. Optional: one beat of silence before exiting fullscreen so applause can land.',
-    llmNotes: 'One warm closing line only unless Algimantas asks for something specific. No hard sell. You can say thanks from both of you (Algimantas and Kiki) in character.',
+    glossary: ['?debug=1 — URL flag for assistant / tool logging in this lab'],
+    notes: 'Warm close; optional beat before leaving fullscreen.',
+    llmNotes: 'One line of thanks from Algimantas and Kiki unless asked for more.',
   },
 ];
+
+function formatBulletsForPlaintext(bullets) {
+  if (!Array.isArray(bullets)) return '';
+  const rows = [];
+  for (const b of bullets) {
+    if (typeof b === 'string') rows.push(b);
+    else if (b && typeof b === 'object' && typeof b.text === 'string') {
+      rows.push(b.text);
+      if (Array.isArray(b.sub)) {
+        for (const s of b.sub) rows.push(`  ${s}`);
+      }
+    }
+  }
+  return rows.map((r) => `- ${r}`).join('\n');
+}
+
+function formatGlossaryForPlaintext(slide) {
+  const g = slide && Array.isArray(slide.glossary) ? slide.glossary : [];
+  if (!g.length) return '';
+  return `Glossary (this slide):\n${g.map((line) => `- ${line}`).join('\n')}`;
+}
+
+function maxTopLevelBulletsInDeck(slides) {
+  let m = 1;
+  for (const s of slides || []) {
+    const n = Array.isArray(s.bullets) ? s.bullets.length : 0;
+    if (n > m) m = n;
+  }
+  return m;
+}
+
+/**
+ * Pre-validated Mermaid for this deck. Each preset is a separate zero-argument tool (`diagram_*`).
+ * Keys must match `SLIDE_DIAGRAM_PRESET_KEYS` in `src/stream-tool-tags.ts`.
+ * In-deck diagram: eval loop only (talk-outline slide 7).
+ */
+const DIAGRAM_PRESETS = {
+  reinforcement_loop: {
+    title: '',
+    definition: `%%{init: {'flowchart': {'curve': 'basis', 'padding': 16}, 'themeVariables': {'fontSize': '22px'}}}%%
+flowchart LR
+  C(["Change"]) --> A(["WAV out"])
+  A --> K(["STT + level gates"])
+  K --> T{Pass?}
+  T -->|yes| D(["Ship"])
+  T -->|no| C`,
+  },
+} as const;
+
+/** 0-based `deck` index where each diagram is rendered in the slide body (not an overlay). */
+const DIAGRAM_PRESET_SLIDE_INDEX: Record<keyof typeof DIAGRAM_PRESETS, number> = {
+  reinforcement_loop: 6,
+};
 
 const SLIDES_LAB_TTS_NANO_ONNX = 'onnx-community/KittenTTS-Nano-v0.8-ONNX';
 const SLIDES_LAB_TTS_MINI_ONNX = 'onnx-community/KittenTTS-Mini-v0.8-ONNX';
@@ -207,6 +304,8 @@ const slideKickerEl = document.getElementById('slide-kicker');
 const slideTitleEl = document.getElementById('slide-title');
 const slideLedeEl = document.getElementById('slide-lede');
 const slideBulletsEl = document.getElementById('slide-bullets');
+const slideGlossEl = document.getElementById('slide-gloss');
+const slideDiagramEl = document.getElementById('slide-diagram');
 const assistantStatusEl = document.getElementById('assistant-status');
 const stageAssistantAvatarEl = document.getElementById('stage-assistant-avatar');
 const stageOrbTriggerEl = document.getElementById('stage-orb-trigger');
@@ -308,8 +407,6 @@ let currentOrbState = 'idle';
 let narratorModeActive = false;
 let narratorProcessing = false;
 let narratorRestartTimer = 0;
-/** After Space interrupt, delay `pttStartListening` so speaker tail is not captured. */
-let interruptDeferredMicTimer = 0;
 /** Drop STT results until this `performance.now()` (speaker tail after interrupt). */
 let sttIgnoreResultsUntilPerfMs = 0;
 let narratorWakeLock = null;
@@ -318,7 +415,7 @@ let activeNarrationAudio = null;
 let activeNarrationUrl = null;
 
 /**
- * Narrator lane FSM — mic stays off during copresenter work (LLM + TTS); Space bumps `assistantEpoch`, stops TTS, then opens the mic after a short delay.
+ * Narrator lane FSM — mic stays off during copresenter work (LLM + TTS); Space bumps `assistantEpoch`, stops TTS, then returns to ARMED until Space opens the mic again.
  *
  * - OFF: narrator mode off (manual Read Slide/Notes still runs TTS outside this lane).
  * - ARMED: narrator on, mic idle; primary phase that schedules recognition.start after TTS ends.
@@ -452,10 +549,6 @@ function clearNarratorRestartTimer() {
   if (narratorRestartTimer) {
     clearTimeout(narratorRestartTimer);
     narratorRestartTimer = 0;
-  }
-  if (interruptDeferredMicTimer) {
-    clearTimeout(interruptDeferredMicTimer);
-    interruptDeferredMicTimer = 0;
   }
 }
 
@@ -827,11 +920,73 @@ function renderSlide() {
   slideTitleEl.textContent = slide.title;
   slideLedeEl.textContent = slide.lede;
   slideBulletsEl.innerHTML = '';
-  slide.bullets.forEach((bullet) => {
+  const bulletList = Array.isArray(slide.bullets) ? slide.bullets : [];
+  bulletList.forEach((bullet) => {
     const item = document.createElement('li');
-    item.textContent = bullet;
-    slideBulletsEl.appendChild(item);
+    if (typeof bullet === 'string') {
+      const body = document.createElement('span');
+      body.className = 'bullet-body';
+      body.textContent = bullet;
+      item.appendChild(body);
+      slideBulletsEl.appendChild(item);
+      return;
+    }
+    if (bullet && typeof bullet === 'object' && typeof bullet.text === 'string') {
+      const head = document.createElement('span');
+      head.className = 'bullet-head';
+      head.textContent = bullet.text;
+      item.appendChild(head);
+      const subs = Array.isArray(bullet.sub) ? bullet.sub : [];
+      if (subs.length) {
+        const subUl = document.createElement('ul');
+        subUl.className = 'bullets bullets-sub';
+        subs.forEach((line) => {
+          const subLi = document.createElement('li');
+          const subBody = document.createElement('span');
+          subBody.className = 'bullet-body';
+          subBody.textContent = line;
+          subLi.appendChild(subBody);
+          subUl.appendChild(subLi);
+        });
+        item.appendChild(subUl);
+      }
+      slideBulletsEl.appendChild(item);
+      return;
+    }
   });
+  if (slideBulletsEl) slideBulletsEl.hidden = bulletList.length === 0;
+
+  const glossLines = Array.isArray(slide.glossary) ? slide.glossary : [];
+  if (slideGlossEl) {
+    if (!glossLines.length) {
+      slideGlossEl.hidden = true;
+      slideGlossEl.innerHTML = '';
+    } else {
+      slideGlossEl.hidden = false;
+      slideGlossEl.innerHTML = '';
+      const glossTitle = document.createElement('div');
+      glossTitle.className = 'slide-gloss-title';
+      glossTitle.textContent = 'On this slide';
+      slideGlossEl.appendChild(glossTitle);
+      const glossUl = document.createElement('ul');
+      glossUl.className = 'slide-gloss-list';
+      glossLines.forEach((line) => {
+        const gli = document.createElement('li');
+        gli.textContent = line;
+        glossUl.appendChild(gli);
+      });
+      slideGlossEl.appendChild(glossUl);
+    }
+  }
+
+  clearSlideDiagram();
+  const rawDiagram = (slide as { diagram?: unknown }).diagram;
+  const diagramKey = typeof rawDiagram === 'string' ? rawDiagram : '';
+  if (diagramKey && diagramKey in DIAGRAM_PRESETS) {
+    slideDiagramGen += 1;
+    const gen = slideDiagramGen;
+    void renderSlideDiagramPreset(diagramKey as keyof typeof DIAGRAM_PRESETS, gen);
+  }
   if (stageSlideRefEl) {
     stageSlideRefEl.textContent = `${currentSlideIndex + 1} / ${deck.length}`;
   }
@@ -978,12 +1133,19 @@ async function detectCapabilities() {
   syncLlmChip();
 }
 
+function isCoarseMobileUa(): boolean {
+  return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent || '',
+  );
+}
+
 async function ensureTtsReady() {
   if (ttsReady) return;
   updateStatus('Loading KittenTTS worker for the slides lab…');
-  /* ORT WASM threads need SharedArrayBuffer → crossOriginIsolated (COOP/COEP). Plain static hosts = 1. */
+  /* ORT WASM threads need SharedArrayBuffer → crossOriginIsolated (COOP/COEP). Plain static hosts = 1.
+   * Phones exhaust WASM heap quickly with pooled threads; keep a single thread on mobile UAs. */
   const wasmThreads =
-    typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated ? 4 : 1;
+    typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated && !isCoarseMobileUa() ? 4 : 1;
   const payload = await postToWorker('init', {
     modelId: modelSelectEl.value,
     runtime: runtimeSelectEl.value,
@@ -1204,12 +1366,12 @@ function hideToolActivity(delay = 600) {
   }, delay);
 }
 
-const stageDiagramEl = document.getElementById('stage-diagram');
 const stageFireworksEl = document.getElementById('stage-fireworks');
-let diagramDismissTimer = 0;
 let mermaidConfigured = false;
 let fireworksRaf = 0;
 let fireworksGen = 0;
+/** Bumps on each slide navigation so stale async Mermaid renders are ignored. */
+let slideDiagramGen = 0;
 
 function ensureMermaidConfigured() {
   const m = globalThis.mermaid;
@@ -1240,34 +1402,26 @@ function ensureMermaidConfigured() {
   return true;
 }
 
-function scheduleDiagramDismiss(durationMs) {
-  if (diagramDismissTimer) { clearTimeout(diagramDismissTimer); diagramDismissTimer = 0; }
-  const dur = Math.min(Math.max(durationMs || 8000, 3000), 30000);
-  diagramDismissTimer = setTimeout(() => {
-    if (!stageDiagramEl) return;
-    stageDiagramEl.classList.add('fade-out');
-    setTimeout(() => {
-      if (!stageDiagramEl) return;
-      stageDiagramEl.classList.remove('visible', 'fade-out');
-      stageDiagramEl.innerHTML = '';
-      delete stageDiagramEl.dataset.diagramPreset;
-    }, 700);
-    diagramDismissTimer = 0;
-  }, dur);
+function clearSlideDiagram() {
+  if (!slideDiagramEl) return;
+  slideDiagramEl.innerHTML = '';
+  slideDiagramEl.hidden = true;
 }
 
 /**
- * @param {string} [presetKey] DIAGRAM_PRESETS object key — stored on data-diagram-preset for toggle shortcuts.
+ * Renders Mermaid into the in-slide diagram host (below bullets), not a fullscreen overlay.
+ * `gen` must match `slideDiagramGen` after any await so stale navigations do not paint.
  */
-async function renderDiagram(definition, title, durationMs, presetKey = '') {
-  if (!stageDiagramEl) return;
-  if (diagramDismissTimer) { clearTimeout(diagramDismissTimer); diagramDismissTimer = 0; }
-  stageDiagramEl.innerHTML = '';
-  stageDiagramEl.classList.remove('visible', 'fade-out');
-  delete stageDiagramEl.dataset.diagramPreset;
-
+async function renderMermaidIntoSlideHost(definition: string, title: string, gen: number) {
+  if (!slideDiagramEl) return;
   const def = String(definition || '').trim();
-  if (!def) return;
+  if (!def) {
+    slideDiagramEl.hidden = true;
+    return;
+  }
+  if (gen !== slideDiagramGen) return;
+
+  slideDiagramEl.innerHTML = '';
 
   const wrap = document.createElement('div');
   wrap.className = 'diagram-mermaid-inner';
@@ -1281,86 +1435,42 @@ async function renderDiagram(definition, title, durationMs, presetKey = '') {
   out.className = 'diagram-mermaid-out';
 
   if (!ensureMermaidConfigured()) {
+    if (gen !== slideDiagramGen) return;
     const err = document.createElement('p');
     err.className = 'diagram-error';
     err.textContent = 'Mermaid did not load. Check network or refresh.';
     out.appendChild(err);
     wrap.appendChild(out);
-    stageDiagramEl.appendChild(wrap);
-    void stageDiagramEl.offsetWidth;
-    stageDiagramEl.classList.add('visible');
-    if (presetKey) stageDiagramEl.dataset.diagramPreset = presetKey;
-    scheduleDiagramDismiss(durationMs);
+    slideDiagramEl.appendChild(wrap);
+    slideDiagramEl.hidden = false;
     return;
   }
 
   const id = `mmd-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   try {
     const { svg, bindFunctions } = await globalThis.mermaid.render(id, def);
+    if (gen !== slideDiagramGen) return;
     out.innerHTML = svg;
     if (typeof bindFunctions === 'function') bindFunctions(out);
-  } catch (e) {
+  } catch (e: unknown) {
+    if (gen !== slideDiagramGen) return;
     const err = document.createElement('p');
     err.className = 'diagram-error';
-    err.textContent = e?.message ? `Diagram error: ${e.message}` : 'Invalid Mermaid diagram.';
+    const msg = e instanceof Error ? e.message : '';
+    err.textContent = msg ? `Diagram error: ${msg}` : 'Invalid Mermaid diagram.';
     out.appendChild(err);
   }
+  if (gen !== slideDiagramGen) return;
   wrap.appendChild(out);
-  stageDiagramEl.appendChild(wrap);
-  void stageDiagramEl.offsetWidth;
-  stageDiagramEl.classList.add('visible');
-  if (presetKey) stageDiagramEl.dataset.diagramPreset = presetKey;
-  scheduleDiagramDismiss(durationMs);
+  slideDiagramEl.appendChild(wrap);
+  slideDiagramEl.hidden = false;
 }
 
-function dismissDiagram() {
-  if (!stageDiagramEl) return;
-  if (diagramDismissTimer) { clearTimeout(diagramDismissTimer); diagramDismissTimer = 0; }
-  stageDiagramEl.classList.remove('visible', 'fade-out');
-  stageDiagramEl.innerHTML = '';
-  delete stageDiagramEl.dataset.diagramPreset;
+async function renderSlideDiagramPreset(key: keyof typeof DIAGRAM_PRESETS, gen: number) {
+  const preset = DIAGRAM_PRESETS[key];
+  if (!preset) return;
+  await renderMermaidIntoSlideHost(preset.definition, preset.title, gen);
 }
-
-/**
- * Pre-validated Mermaid for this deck. Each preset is a separate zero-argument tool (diagram_*).
- * Object keys must match `SLIDE_DIAGRAM_PRESET_KEYS` in src/stream-tool-tags.ts (build order + stream parser).
- */
-const DIAGRAM_PRESETS = {
-  live_stack: {
-    title: 'Live stack',
-    definition: `flowchart LR
-  C[Slide + question] --> L[LLM]
-  L --> K[KittenTTS]
-  K --> A[Audio out]
-  A --> B[Listen-back STT]
-  B --> S[Score / next step]`,
-  },
-  reinforcement_loop: {
-    title: 'Reinforcement loop',
-    definition: `flowchart TD
-  P[Prompt + slide] --> R[Reply]
-  R --> T[KittenTTS]
-  T --> O[Play audio]
-  O --> H[STT transcript]
-  H --> J{Fits intent?}
-  J -->|yes| D[Accept]
-  J -->|no| X[Revise]
-  X --> P`,
-  },
-  scoring_flow: {
-    title: 'Listen-back scoring',
-    definition: `flowchart LR
-  I[Slide anchors] --> V[Compare]
-  H[STT text] --> V
-  V --> U[Accept or retry]`,
-  },
-};
-
-const DIAGRAM_TOOL_DESCRIPTIONS = {
-  live_stack: 'Live stack: slide → LLM → KittenTTS → audio → listen-back STT → score.',
-  reinforcement_loop: 'Reinforcement loop: prompt → reply → TTS → play → STT → accept or revise.',
-  scoring_flow: 'Listen-back scoring: slide anchors + STT text → compare → accept or retry.',
-};
 
 /** KittenTTS friendly names (see src/kitten-tts.ts voiceAliases). */
 const KITTEN_TTS_VOICE_OPTIONS = Object.freeze([
@@ -1386,8 +1496,8 @@ function resolveKittenVoiceOption(raw) {
  * - This HTML: deck UI, system prompt, `executeToolCall` (DOM / TTS / stage effects).
  * - `src/slides-ollama-assistant.ts` → `docs/slides-ollama.js`: streaming /api/chat with Ollama
  *   `tools` + streamed `tool_calls` only (no embedded XML tool execution).
- * - `src/stream-tool-tags.ts`: `SLIDE_TOOL_NAMES`, `SLIDE_TOOL_RUN_ORDER`, `SLIDE_DIAGRAM_PRESET_KEYS`;
- *   keep `KNOWN_SLIDE_TOOL_NAMES` / `DIAGRAM_PRESETS` keys aligned. Rebuild: `npm run build:slides-ollama`.
+ * - `src/stream-tool-tags.ts`: `SLIDE_TOOL_NAMES` (full runtime set for XML/tests).
+ * - Ollama exposes a subset only — see `OLLAMA_SLIDE_TOOLS` in `slides-ollama-assistant.ts`. Rebuild: `npm run build:slides-ollama`.
  */
 
 function prewarmSlideDiagramEngine() {
@@ -1509,7 +1619,6 @@ function clearToolEffects() {
     stageOverlayEl.classList.remove('visible');
     stageOverlayEl.textContent = '';
   }
-  dismissDiagram();
   stopFireworks();
 }
 
@@ -1569,7 +1678,7 @@ async function executeToolCall(call) {
   if (n === 'highlight_text') {
     const text = String(args.text || '').trim();
     if (!text) return 'no text provided';
-    const targets = [slideTitleEl, slideLedeEl, slideBulletsEl];
+    const targets = [slideTitleEl, slideLedeEl, slideBulletsEl, slideGlossEl];
     let found = false;
     for (const el of targets) {
       if (!el) continue;
@@ -1607,7 +1716,7 @@ async function executeToolCall(call) {
     if (!Number.isFinite(raw) || raw < 1) return 'index required: 1-based bullet number';
     const bulletNum = Math.floor(raw);
     const idx = bulletNum - 1;
-    const bullets = slideBulletsEl?.querySelectorAll('li');
+    const bullets = slideBulletsEl?.querySelectorAll(':scope > li');
     if (!bullets || idx < 0 || idx >= bullets.length) return `Bullet ${bulletNum} not found`;
     const li = bullets[idx];
     li.classList.add('tool-emphasize');
@@ -1656,11 +1765,13 @@ async function executeToolCall(call) {
 
   if (n.startsWith('diagram_')) {
     const key = n.slice('diagram_'.length);
-    const preset = DIAGRAM_PRESETS[key];
-    if (!preset) return '';
-    const dur = 8000;
-    await renderDiagram(preset.definition, preset.title, dur, key);
-    return `Diagram "${key}" shown for ${dur / 1000}s`;
+    if (!(key in DIAGRAM_PRESETS)) return '';
+    const presetKey = key as keyof typeof DIAGRAM_PRESETS;
+    const idx = DIAGRAM_PRESET_SLIDE_INDEX[presetKey];
+    if (idx === undefined) return '';
+    currentSlideIndex = idx;
+    renderSlide();
+    return `Navigated to slide ${idx + 1} (${DIAGRAM_PRESETS[presetKey].title})`;
   }
 
   if (n === 'fireworks') {
@@ -1770,7 +1881,7 @@ const OLLAMA_SLIDE_SYSTEM_PROMPT = [
   '- Persisted chat history is text-only: past tool calls and tool results are not replayed to save context. Use tools freely on each new turn when it helps.',
   '',
   'STREAM SLIDE ACTIONS — use only the API tool / function calls Ollama provides (streamed `tool_calls`). The host runs them in deck order. Pass JSON arguments per each tool schema; invented tool names are ignored.',
-  'Tools: highlight_text, emphasize_bullet, go_to_slide, set_voice, show_overlay, diagram_live_stack, diagram_reinforcement_loop, diagram_scoring_flow, fireworks. Diagram tools use empty arguments {}. set_voice.voice is one of: Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo.',
+  'You may call ONLY these tools: highlight_text, emphasize_bullet, go_to_slide, fireworks. Nothing else exists in your tool list — do not try set_voice, overlays, or diagram tools.',
   'Do not put <tools> XML or tool markup in spoken text — only use real tool calls. Plain text is for the audience (TTS).',
   '',
   'Algimantas says "let\'s stress latency" → short spoken line plus tool highlight_text with arguments { "text": "latency" }.',
@@ -1783,8 +1894,7 @@ const OLLAMA_SLIDE_SYSTEM_PROMPT = [
   '- Tools do not require a spoken caption. If you speak, it must be audience words — never play-by-play of the tool.',
 ].join('\n') +
   `\n\nENUM HINT: This deck has ${deck.length} slides (slide_number 1–${deck.length}).` +
-  ` emphasize_bullet index runs 1–${Math.max(deck.reduce((m, s) => Math.max(m, (s.bullets || []).length), 0), 1)} (max bullets on any slide).` +
-  ` set_voice.voice must be one of: ${KITTEN_TTS_VOICE_OPTIONS.join(', ')}.`;
+  ` emphasize_bullet index runs 1–${maxTopLevelBulletsInDeck(deck)} (top-level bullets only; max on any slide).`;
 
 function ollamaPruneConversation(maxTokens = OLLAMA_HISTORY_TOKEN_BUDGET) {
   const msgs = ollamaConversation.messages;
@@ -2037,7 +2147,8 @@ function uninstallOllamaAdapter() {
 
 
 function buildSlideContext(slide) {
-  return `Slide: ${slide.title}\nSection: ${slide.kicker}\nSummary: ${slide.lede}\nBullets:\n- ${slide.bullets.join('\n- ')}\nPresenter notes: ${slide.notes}\nLLM assist notes: ${slide.llmNotes}`;
+  const glossBlock = formatGlossaryForPlaintext(slide);
+  return `Slide: ${slide.title}\nSection: ${slide.kicker}\nSummary: ${slide.lede}\nBullets:\n${formatBulletsForPlaintext(slide.bullets)}${glossBlock ? `\n${glossBlock}\n` : '\n'}Presenter notes: ${slide.notes}\nLLM assist notes: ${slide.llmNotes}`;
 }
 
 function mergedSlideAt(index) {
@@ -2280,11 +2391,12 @@ function formatSlideBlockForLlm(slide, i, n) {
       ? `\nArtifacts:\n- ${slide.artifacts.join('\n- ')}`
       : '';
   const aq = slide.audienceQuestion ? `\nAudience question (prompt): ${slide.audienceQuestion}` : '';
-  const bl = Array.isArray(slide.bullets) ? slide.bullets : [];
+  const glossBlock = formatGlossaryForPlaintext(slide);
   return (
     `--- Slide ${i + 1} of ${n} ---\n` +
       `Slide: ${slide.title}\nSection: ${slide.kicker}\nDuration: ${slide.duration}\nTakeaway: ${slide.takeaway}${art}${aq}\n` +
-      `Summary: ${slide.lede}\nBullets:\n- ${bl.join('\n- ')}\nPresenter notes: ${slide.notes}\nLLM assist notes: ${slide.llmNotes}`
+      `Summary: ${slide.lede}\nBullets:\n${formatBulletsForPlaintext(slide.bullets)}${glossBlock ? `\n${glossBlock}\n` : '\n'}` +
+      `Presenter notes: ${slide.notes}\nLLM assist notes: ${slide.llmNotes}`
   );
 }
 
@@ -2921,10 +3033,6 @@ function pttInterruptAndListen() {
   syncMediaSessionPlaying('', false);
   sttIgnoreResultsUntilPerfMs = performance.now() + 750;
   pttAccumulated = '';
-  if (narratorModeActive) {
-    narratorAudioPhase = NarratorPhase.ARMED;
-    refreshNarratorLiveUi('Listening soon…', '');
-  }
   if (recognition && listening) {
     try {
       recognition.stop();
@@ -2932,12 +3040,14 @@ function pttInterruptAndListen() {
       /* ignore */
     }
   }
-  const delayMs = 450;
-  interruptDeferredMicTimer = window.setTimeout(() => {
-    interruptDeferredMicTimer = 0;
-    if (!narratorModeActive) return;
-    pttStartListening();
-  }, delayMs);
+  if (narratorModeActive) {
+    narratorAudioPhase = NarratorPhase.ARMED;
+    refreshNarratorLiveUi('Ready — press Space to talk.', '');
+    setOrbState('idle');
+    showStageCaption('');
+    showStagePttHint('Press Space to talk');
+    updateStatus('Interrupted — press Space when you want to speak.', 'success');
+  }
 }
 
 async function pttSendToLlm(transcript) {
@@ -2977,17 +3087,15 @@ async function pttSendToLlm(transcript) {
   }
 }
 
-/** @returns {string | null} DIAGRAM_PRESETS key for digit 1–3 */
+/** @returns {string | null} DIAGRAM_PRESETS key for digit 1 (eval-loop slide) */
 function diagramPresetKeyFromDigitCode(code) {
-  if (code === 'Digit1' || code === 'Numpad1') return 'live_stack';
-  if (code === 'Digit2' || code === 'Numpad2') return 'reinforcement_loop';
-  if (code === 'Digit3' || code === 'Numpad3') return 'scoring_flow';
+  if (code === 'Digit1' || code === 'Numpad1') return 'reinforcement_loop';
   return null;
 }
 
 /**
  * Manual stage effects when the LLM path is down — same as native tools.
- * Alt+1…3 toggles that diagram; Alt+0 closes any diagram; Alt+4 = fireworks.
+ * Alt+1 jumps to the eval-loop diagram slide; Alt+4 = fireworks.
  * Ctrl+Shift+digits = same when Alt is grabbed by the OS/browser.
  */
 function runManualStageEffectFromShortcut(event) {
@@ -2997,28 +3105,11 @@ function runManualStageEffectFromShortcut(event) {
   if (!altChord && !ctrlShiftChord) return false;
   const code = event.code;
 
-  if (code === 'Digit0' || code === 'Numpad0') {
-    if (!stageDiagramEl?.classList.contains('visible')) return false;
-    event.preventDefault();
-    dismissDiagram();
-    updateStatus('Diagram dismissed', 'success');
-    return true;
-  }
-
   const presetKey = diagramPresetKeyFromDigitCode(code);
   if (presetKey) {
-    const showing = stageDiagramEl?.classList.contains('visible');
-    const current = stageDiagramEl?.dataset?.diagramPreset;
-    if (showing && current === presetKey) {
-      event.preventDefault();
-      dismissDiagram();
-      updateStatus('Diagram dismissed (same shortcut)', 'success');
-      return true;
-    }
-    const name = `diagram_${presetKey}`;
     event.preventDefault();
-    void executeToolCall({ function: { name, arguments: {} } });
-    updateStatus(`Diagram: ${presetKey}`, 'success');
+    void executeToolCall({ function: { name: `diagram_${presetKey}`, arguments: {} } });
+    updateStatus(`Slide: ${presetKey}`, 'success');
     return true;
   }
 
@@ -3104,12 +3195,6 @@ document.addEventListener(
   }
 
   if (event.key === 'Escape') {
-    if (stageDiagramEl?.classList.contains('visible')) {
-      event.preventDefault();
-      dismissDiagram();
-      updateStatus('Diagram dismissed', 'success');
-      return;
-    }
     if (isStagePresenting()) {
       event.preventDefault();
       void document.exitFullscreen();

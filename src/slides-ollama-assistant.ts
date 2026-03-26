@@ -6,7 +6,7 @@
  * Ollama chat API documents `think` as a boolean on the request body.
  * Streaming is NDJSON (one JSON object per line).
  *
- * Slide actions use only Ollama's native `tools` + streamed `message.tool_calls`
+ * Slide actions (highlight, bullets, go_to_slide, fireworks) use Ollama native `tools` + streamed `message.tool_calls`
  * (see https://github.com/ollama/ollama/pull/10415). Assistant `content` is still
  * passed through `stripToolBlocksForSpeech` so accidental XML in text is not spoken.
  * Duplicate native calls in one turn are skipped via `stableToolCallFingerprint`.
@@ -124,19 +124,11 @@ function ollamaFetchInit(body: unknown): RequestInit {
   };
 }
 
-/** Must match KITTEN_TTS_VOICE_OPTIONS in docs/slides.html. */
-const KITTEN_TTS_VOICE_ENUM = [
-  'Bella',
-  'Jasper',
-  'Luna',
-  'Bruno',
-  'Rosie',
-  'Hugo',
-  'Kiki',
-  'Leo',
-] as const;
-
-/** Ollama /api/chat `tools` list for slide stage actions. */
+/**
+ * Ollama /api/chat `tools` list for Kiki (copresenter).
+ * Intentionally narrow: highlight, bullets, slide changes, fireworks only.
+ * Other stage actions (voice, overlay, diagram jumps) are presenter UI / shortcuts only — see `executeToolCall` in slides-lab-main.
+ */
 export const OLLAMA_SLIDE_TOOLS: readonly unknown[] = [
   {
     type: 'function',
@@ -178,62 +170,6 @@ export const OLLAMA_SLIDE_TOOLS: readonly unknown[] = [
           slide_number: { type: 'number', description: 'Slide number from 1 to deck length.' },
         },
       },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'set_voice',
-      description: 'Switch KittenTTS voice for the next spoken lines.',
-      parameters: {
-        type: 'object',
-        required: ['voice'],
-        properties: {
-          voice: {
-            type: 'string',
-            enum: [...KITTEN_TTS_VOICE_ENUM],
-            description: 'KittenTTS voice name.',
-          },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'show_overlay',
-      description: 'Show a short text overlay on stage for a few seconds.',
-      parameters: {
-        type: 'object',
-        properties: {
-          text: { type: 'string', description: 'Overlay text.' },
-          duration_seconds: { type: 'number', description: 'Seconds to show (default ~5, max ~15).' },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'diagram_live_stack',
-      description: 'Show preset diagram: slide → LLM → TTS → audio → STT → score.',
-      parameters: { type: 'object', properties: {} },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'diagram_reinforcement_loop',
-      description: 'Show preset diagram: reinforcement / listen-back loop.',
-      parameters: { type: 'object', properties: {} },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'diagram_scoring_flow',
-      description: 'Show preset diagram: anchors vs transcript scoring.',
-      parameters: { type: 'object', properties: {} },
     },
   },
   {
