@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KittenTTS JS — Slides + Assistant Lab</title>
+  <title>KittenTTS — Slides</title>
   <style>
     :root {
       --bg: #f4efe6;
@@ -28,15 +28,146 @@
       box-sizing: border-box;
     }
 
+    html {
+      overflow-y: scroll;
+      /* Fallback canvas color; body stays transparent so .page-atmosphere is not hidden under body background. */
+      background-color: #e2dbd2;
+      min-height: 100%;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
       color: var(--ink);
       font-family: var(--sans);
-      background:
-        radial-gradient(circle at top left, rgba(208, 99, 47, 0.16), transparent 24%),
-        radial-gradient(circle at 80% 10%, rgba(72, 142, 255, 0.12), transparent 20%),
-        linear-gradient(180deg, #f8f3eb 0%, #f0e7dc 100%);
+      background: transparent;
+      position: relative;
+    }
+
+    .page-atmosphere {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      transform: translateZ(0);
+      background: linear-gradient(
+        132deg,
+        #f3ece4 0%,
+        #e8dfd4 22%,
+        #faf6f1 48%,
+        #e3dbd2 72%,
+        #f0e8de 100%
+      );
+      background-size: 360% 360%;
+      animation: page-atmosphere-wash 16s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+    }
+
+    .page-atmosphere-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(84px);
+      -webkit-filter: blur(84px);
+      will-change: transform, opacity;
+    }
+
+    .page-atmosphere-blob--a {
+      width: clamp(320px, 62vw, 640px);
+      height: clamp(320px, 62vw, 640px);
+      background: radial-gradient(
+        circle at 38% 32%,
+        rgba(208, 99, 47, 0.58) 0%,
+        rgba(208, 99, 47, 0.16) 46%,
+        transparent 70%
+      );
+      top: -14%;
+      left: -12%;
+      animation: page-blob-a 13s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    .page-atmosphere-blob--b {
+      width: clamp(360px, 66vw, 680px);
+      height: clamp(360px, 66vw, 680px);
+      background: radial-gradient(
+        circle at 45% 55%,
+        rgba(88, 132, 228, 0.48) 0%,
+        rgba(88, 132, 228, 0.14) 42%,
+        transparent 68%
+      );
+      bottom: -20%;
+      right: -14%;
+      animation: page-blob-b 15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    .page-atmosphere-blob--c {
+      width: clamp(240px, 48vw, 500px);
+      height: clamp(240px, 48vw, 500px);
+      background: radial-gradient(
+        circle at 50% 40%,
+        rgba(168, 124, 72, 0.52) 0%,
+        rgba(139, 90, 43, 0.16) 48%,
+        transparent 66%
+      );
+      top: 42%;
+      left: 50%;
+      animation: page-blob-c 10.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
+    }
+
+    @keyframes page-atmosphere-wash {
+      0%, 100% { background-position: 2% 18%; }
+      33% { background-position: 88% 42%; }
+      66% { background-position: 35% 92%; }
+    }
+
+    @keyframes page-blob-a {
+      0%, 100% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        opacity: 0.72;
+      }
+      35% {
+        transform: translate(14vw, 9vh) scale(1.26) rotate(10deg);
+        opacity: 1;
+      }
+      70% {
+        transform: translate(5vw, -11vh) scale(0.82) rotate(-8deg);
+        opacity: 0.78;
+      }
+    }
+
+    @keyframes page-blob-b {
+      0%, 100% {
+        transform: translate(0, 0) scale(1.1) rotate(0deg);
+        opacity: 0.62;
+      }
+      50% {
+        transform: translate(-15vw, -13vh) scale(0.78) rotate(-12deg);
+        opacity: 1;
+      }
+    }
+
+    @keyframes page-blob-c {
+      0% {
+        transform: translateX(-50%) translateY(0) scale(1) rotate(0deg);
+        opacity: 0.52;
+      }
+      100% {
+        transform: translateX(-50%) translateY(-13vh) scale(1.36) rotate(7deg);
+        opacity: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .page-atmosphere,
+      .page-atmosphere-blob--a,
+      .page-atmosphere-blob--b,
+      .page-atmosphere-blob--c {
+        animation: none;
+      }
+      .page-atmosphere {
+        background-size: 100% 100%;
+        background-position: center;
+      }
     }
 
     a {
@@ -44,118 +175,143 @@
     }
 
     .shell {
-      max-width: 1480px;
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 24px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
-      gap: 18px;
-    }
-
-    .topbar {
-      display: flex;
-      align-items: center;
       gap: 14px;
-      padding: 18px 22px;
-      background: rgba(255, 252, 247, 0.84);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(216, 202, 187, 0.9);
-      border-radius: 999px;
-      box-shadow: var(--shadow);
-      flex-wrap: wrap;
     }
 
-    .eyebrow {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      color: var(--accent-deep);
-      font-weight: 700;
-    }
-
-    .title-wrap {
+    .presenter-layout {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      min-width: 280px;
+      gap: 14px;
+      align-items: stretch;
     }
 
-    .title-wrap h1 {
-      margin: 0;
-      font-size: 1.35rem;
-      letter-spacing: -0.03em;
-    }
-
-    .title-wrap p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .status-strip {
-      margin-left: auto;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .chip {
-      padding: 0.45rem 0.72rem;
-      border-radius: 999px;
-      background: var(--panel-strong);
-      border: 1px solid var(--line);
-      font-size: 0.8rem;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    .chip strong {
-      color: var(--ink);
-    }
-
-    .workspace {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.9fr);
-      gap: 18px;
-      min-height: calc(100vh - 150px);
-    }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid rgba(216, 202, 187, 0.92);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      min-height: 0;
-    }
-
-    .slides-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 250px;
-    }
-
-    .stage-wrap {
-      padding: 20px;
+    .presenter-main {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       min-width: 0;
     }
 
+    .presenter-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .presenter-rail[hidden] {
+      display: none !important;
+    }
+
+    @media (min-width: 900px) {
+      .presenter-layout {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 20px;
+      }
+
+      .presenter-main {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .presenter-rail {
+        flex: 0 0 min(260px, 28vw);
+        position: sticky;
+        top: 18px;
+      }
+
+      .presenter-rail[hidden] {
+        flex: 0 0 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+        overflow: hidden;
+      }
+    }
+
+    .stage-card:focus {
+      outline: none;
+    }
+
+    .stage-card:focus-visible {
+      box-shadow: var(--shadow), 0 0 0 3px rgba(208, 99, 47, 0.45);
+    }
+
     .stage-card {
-      min-height: 560px;
-      border-radius: calc(var(--radius) - 6px);
-      padding: 28px;
+      min-height: clamp(400px, 52vh, 640px);
+      border-radius: var(--radius);
+      padding: 36px;
+      box-shadow: var(--shadow);
       color: #fff7ef;
       background:
         radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.18), transparent 18%),
         linear-gradient(145deg, #39241b 0%, #24120f 40%, #6b2d16 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      background-size: 100% 100%, 140% 140%;
+      background-position: 0% 0%, 0% 50%;
+      animation: stage-card-bg-shift 18s ease-in-out infinite;
+      display: grid;
+      /* auto + auto: stage-main sizes to content so the right rail is never clipped by 1fr + overflow */
+      grid-template-rows: auto auto;
       gap: 18px;
       position: relative;
       overflow: hidden;
+    }
+
+    @keyframes stage-card-bg-shift {
+      0%, 100% { background-position: 0% 0%, 0% 40%; }
+      50% { background-position: 0% 0%, 100% 60%; }
+    }
+
+    .stage-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(
+        105deg,
+        transparent 0%,
+        rgba(255, 183, 136, 0.07) 38%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(208, 99, 47, 0.08) 62%,
+        transparent 100%
+      );
+      background-size: 220% 100%;
+      animation: stage-card-sheen 14s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes stage-card-sheen {
+      0%, 100% { background-position: -30% 0%; opacity: 0.65; }
+      50% { background-position: 130% 0%; opacity: 1; }
+    }
+
+    .stage-card:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      min-height: 100vh;
+      border-radius: 0;
+      padding: clamp(28px, 4vw, 56px);
+      grid-template-rows: auto 1fr;
+    }
+
+    .stage-card:fullscreen .stage-main h2 {
+      max-width: min(90vw, 26ch);
+      font-size: clamp(2.4rem, 4.5vw, 5rem);
+    }
+
+    .stage-card:fullscreen .lede,
+    .stage-card:fullscreen .bullets li {
+      font-size: clamp(1.05rem, 1.5vw, 1.4rem);
     }
 
     .stage-card::after {
@@ -167,6 +323,13 @@
       border-radius: 50%;
       background: rgba(255, 183, 136, 0.14);
       filter: blur(6px);
+      z-index: 0;
+      animation: stage-card-glow 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes stage-card-glow {
+      0% { opacity: 0.65; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.08); }
     }
 
     .stage-meta {
@@ -174,6 +337,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 12px;
+      flex-wrap: wrap;
       position: relative;
       z-index: 1;
     }
@@ -186,10 +350,46 @@
       font-weight: 700;
     }
 
-    .stage-index {
+    .stage-waveform {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 240px;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .stage-card[data-waveform-active] .stage-waveform {
+      opacity: 1;
+    }
+
+    .stage-card:fullscreen .stage-waveform {
+      height: 320px;
+    }
+
+    .stage-slide-ref {
+      position: absolute;
+      bottom: clamp(14px, 2.2vw, 22px);
+      right: clamp(14px, 2.5vw, 28px);
+      z-index: 15;
       font-family: var(--mono);
-      font-size: 0.82rem;
-      color: rgba(255, 247, 239, 0.76);
+      font-size: 0.74rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: rgba(255, 247, 239, 0.42);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .stage-card:fullscreen .stage-slide-ref {
+      bottom: clamp(18px, 2.5vw, 32px);
+      right: clamp(18px, 3vw, 40px);
+      font-size: clamp(0.72rem, 1.1vw, 0.88rem);
+      color: rgba(255, 247, 239, 0.48);
     }
 
     .stage-main {
@@ -198,14 +398,84 @@
       gap: 18px;
       position: relative;
       z-index: 1;
+      min-height: 0;
+      padding-bottom: 72px;
+    }
+
+    .stage-card:fullscreen .stage-main {
+      padding-bottom: 88px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stage-caption-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 24px;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.4) 70%, transparent);
+      pointer-events: none;
+    }
+
+    .stage-caption-text {
+      font-size: clamp(1rem, 2.2vw, 1.5rem);
+      color: #fff;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+      text-align: center;
+      max-width: 80%;
+      line-height: 1.4;
+      font-weight: 500;
+    }
+
+    .stage-ptt-hint {
+      position: absolute;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 14;
+      pointer-events: none;
+    }
+
+    .stage-ptt-hint span {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.55);
+      color: rgba(255, 247, 239, 0.85);
+      font-size: 0.82rem;
+      font-weight: 500;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    @keyframes stage-caption-pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .stage-caption-bar[data-listening="true"] .stage-caption-text {
+      animation: stage-caption-pulse 1.5s ease-in-out infinite;
+    }
+
+    .stage-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
     }
 
     .stage-main h2 {
       margin: 0;
-      font-size: clamp(2rem, 3vw, 3.5rem);
-      line-height: 1.02;
-      letter-spacing: -0.05em;
-      max-width: 12ch;
+      font-size: clamp(1.65rem, 2.8vw, 3.25rem);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      max-width: 100%;
+      text-wrap: balance;
     }
 
     .lede {
@@ -214,6 +484,7 @@
       color: rgba(255, 247, 239, 0.84);
       font-size: 1.03rem;
       line-height: 1.5;
+      white-space: pre-line;
     }
 
     .bullets {
@@ -234,6 +505,369 @@
       line-height: 1.45;
     }
 
+    @keyframes tool-highlight-pulse {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .tool-highlight {
+      background: linear-gradient(90deg, rgba(255,183,136,0.35), rgba(208,99,47,0.5), rgba(255,183,136,0.35));
+      background-size: 200% 100%;
+      animation: tool-highlight-pulse 1.5s ease-in-out infinite;
+      border-radius: 4px;
+      padding: 0 4px;
+      margin: 0 -4px;
+      transition: background 0.3s ease;
+    }
+
+    .tool-highlight.fade-out {
+      animation: none;
+      background: transparent;
+      transition: background 0.6s ease;
+    }
+
+    @keyframes tool-emphasize-bullet {
+      0% { transform: translateX(0); opacity: 1; }
+      15% { transform: translateX(8px); }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+
+    .tool-emphasize {
+      animation: tool-emphasize-bullet 0.5s ease-out;
+      color: #fff !important;
+      text-shadow: 0 0 18px rgba(255, 183, 136, 0.6);
+      transition: text-shadow 0.6s ease, color 0.6s ease;
+    }
+
+    .tool-emphasize.fade-out {
+      text-shadow: none;
+      color: rgba(255, 247, 239, 0.92) !important;
+    }
+
+    .stage-overlay {
+      position: absolute;
+      bottom: 80px;
+      left: 28px;
+      right: 28px;
+      z-index: 5;
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(12px);
+      color: #fff7ef;
+      font-size: 1rem;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      pointer-events: none;
+    }
+
+    .stage-overlay.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stage-card:fullscreen .stage-overlay {
+      bottom: 120px;
+      left: clamp(28px, 4vw, 56px);
+      right: clamp(28px, 4vw, 56px);
+      font-size: clamp(1rem, 1.3vw, 1.3rem);
+    }
+
+    /* ---- diagram_* tool overlay (Mermaid) ---- */
+    .stage-diagram {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      padding: clamp(12px, 2.2vw, 28px);
+      box-sizing: border-box;
+      background: rgba(24, 20, 18, 0.82);
+      backdrop-filter: blur(18px) saturate(1.4);
+      -webkit-backdrop-filter: blur(18px) saturate(1.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .stage-diagram.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .stage-diagram.fade-out {
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    .diagram-title {
+      flex-shrink: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: rgba(255, 210, 170, 0.9);
+      letter-spacing: 0.04em;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .diagram-mermaid-inner {
+      flex: 1 1 auto;
+      align-self: stretch;
+      width: 100%;
+      max-width: 100%;
+      min-height: 0;
+      max-height: calc(100% - 8px);
+      overflow: auto;
+      padding: 4px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .diagram-mermaid-out {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      overflow: auto;
+    }
+
+    .diagram-mermaid-out svg {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      min-height: 120px;
+    }
+
+    .diagram-error {
+      margin: 0;
+      color: #ffb8a0;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .stage-card:fullscreen .stage-diagram {
+      backdrop-filter: blur(24px) saturate(1.5);
+      -webkit-backdrop-filter: blur(24px) saturate(1.5);
+      padding: clamp(20px, 3vw, 48px);
+    }
+
+    .stage-card:fullscreen .diagram-title {
+      font-size: clamp(1.1rem, 1.4vw, 1.5rem);
+      margin-bottom: 20px;
+    }
+
+    .stage-card:fullscreen .diagram-mermaid-inner {
+      max-height: min(calc(100dvh - 140px), calc(100% - 24px));
+    }
+
+    .stage-card:fullscreen .diagram-mermaid-out svg {
+      max-width: min(96vw, 100%);
+      max-height: min(78dvh, 820px);
+    }
+
+    .stage-fireworks {
+      position: absolute;
+      inset: 0;
+      /* Above diagram (8), overlay (5), and tool pulse (6) so bursts stay visible */
+      z-index: 12;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .stage-fireworks.active {
+      opacity: 1;
+    }
+
+    .tool-commands-ref {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(52, 124, 168, 0.08), rgba(208, 99, 47, 0.06));
+      border: 1px solid rgba(100, 89, 79, 0.2);
+    }
+
+    .tool-commands-ref h3 {
+      margin: 0 0 8px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      color: var(--accent-deep);
+    }
+
+    .tool-commands-ref ul {
+      margin: 0;
+      padding: 0 0 0 1em;
+      font-size: 0.76rem;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .tool-commands-ref code {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--ink);
+      background: rgba(255, 252, 247, 0.9);
+      padding: 0.08em 0.28em;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+    }
+
+    .tool-commands-ref kbd {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      padding: 0.12em 0.35em;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+      background: rgba(255, 252, 247, 0.95);
+      color: var(--ink);
+    }
+
+    .assistant-debug-panel {
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(30, 26, 22, 0.06);
+      border: 1px dashed rgba(100, 89, 79, 0.45);
+    }
+
+    .assistant-debug-panel[hidden] {
+      display: none !important;
+    }
+
+    .assistant-debug-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .assistant-debug-header strong {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-deep);
+    }
+
+    .assistant-debug-header button {
+      font-size: 0.68rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      cursor: pointer;
+      font-family: var(--sans);
+    }
+
+    .assistant-debug-log {
+      max-height: 220px;
+      overflow: auto;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      line-height: 1.35;
+      color: var(--ink);
+      background: rgba(255, 252, 247, 0.92);
+      border-radius: 10px;
+      padding: 8px;
+      border: 1px solid var(--line);
+    }
+
+    .assistant-debug-entry {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(216, 202, 187, 0.7);
+    }
+
+    .assistant-debug-entry:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .assistant-debug-meta {
+      color: var(--muted);
+      font-size: 0.62rem;
+      margin-bottom: 2px;
+    }
+
+    .assistant-debug-kind {
+      font-weight: 700;
+      color: var(--accent-deep);
+    }
+
+    .assistant-debug-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+    }
+
+    .assistant-debug-hint {
+      margin: 8px 0 0;
+      font-size: 0.62rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .tool-activity {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(8px);
+      color: #ffd6b8;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      pointer-events: none;
+    }
+
+    .tool-activity.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .tool-activity-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ffb68b;
+      animation: tool-dot-pulse 0.8s ease-in-out infinite;
+    }
+
+    @keyframes tool-dot-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    .stage-card:fullscreen .tool-activity {
+      top: clamp(16px, 3vw, 32px);
+      right: clamp(16px, 3vw, 32px);
+      font-size: 0.8rem;
+      padding: 6px 14px;
+    }
+
     .bullets li::before {
       content: "•";
       color: #ffb68b;
@@ -241,24 +875,22 @@
       line-height: 1;
     }
 
-    .note-band {
-      position: relative;
-      z-index: 1;
-      padding-top: 14px;
-      border-top: 1px solid rgba(255, 247, 239, 0.16);
-      color: rgba(255, 247, 239, 0.72);
-      font-size: 0.94rem;
-      line-height: 1.5;
-    }
-
     .slide-controls,
     .toolbar,
-    .tts-controls,
-    .stt-controls,
-    .assistant-controls {
+    .presenter-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .slide-controls button {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      font-size: 1.1rem;
+      border-radius: 50%;
     }
 
     button,
@@ -305,781 +937,352 @@
     .toolbar {
       justify-content: space-between;
       align-items: center;
+      padding: 14px 18px;
+      background: rgba(255, 252, 247, 0.84);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(216, 202, 187, 0.9);
+      border-radius: 999px;
+      box-shadow: var(--shadow);
     }
 
-    .progress {
-      color: var(--muted);
-      font-size: 0.86rem;
-    }
-
-    .speaker-box {
-      background: rgba(255, 251, 246, 0.95);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .section-label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    .speaker-box p,
-    .stack p,
-    .hint {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .thumbs {
-      padding: 20px 18px;
-      background: rgba(246, 239, 230, 0.86);
-      border-left: 1px solid var(--line);
+    .toolbar-group {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
-      overflow: auto;
-    }
-
-    .thumb {
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 14px;
-      background: rgba(255, 250, 242, 0.8);
-      display: grid;
-      gap: 8px;
-      text-align: left;
-    }
-
-    .thumb.active {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(208, 99, 47, 0.16);
-    }
-
-    .thumb strong {
-      font-size: 0.95rem;
-    }
-
-    .thumb span {
-      color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.45;
-    }
-
-    .assistant-panel {
-      display: grid;
-      grid-template-rows: auto auto auto 1fr auto;
-      min-height: 0;
-    }
-
-    .assistant-head,
-    .assistant-foot,
-    .stack {
-      padding: 18px 20px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .assistant-foot {
-      border-top: 1px solid var(--line);
-      border-bottom: none;
-      display: grid;
-      gap: 12px;
-    }
-
-    .assistant-head {
-      display: grid;
-      gap: 8px;
-    }
-
-    .assistant-head h3 {
-      margin: 0;
-      font-size: 1.15rem;
-      letter-spacing: -0.03em;
-    }
-
-    .grid-two {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: center;
       gap: 10px;
+      flex-wrap: wrap;
     }
 
-    label {
-      display: grid;
-      gap: 6px;
-      font-size: 0.84rem;
+    .presenter-actions {
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .toolbar-field {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .toolbar-label {
+      font-size: 0.78rem;
       color: var(--muted);
+      white-space: nowrap;
     }
 
-    select,
-    textarea,
-    input[type="text"] {
-      width: 100%;
+    select.toolbar-select {
+      padding: 0.32rem 0.55rem;
+      border-radius: 12px;
       border: 1px solid var(--line);
-      border-radius: 14px;
       background: var(--panel-strong);
       color: var(--ink);
-      padding: 0.78rem 0.92rem;
-      outline: none;
+      cursor: pointer;
+      min-width: 6.8rem;
     }
 
-    textarea {
-      resize: vertical;
-      min-height: 92px;
-      line-height: 1.5;
-    }
-
-    .conversation {
-      min-height: 0;
-      overflow: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      background: linear-gradient(180deg, rgba(255, 252, 248, 0.9), rgba(247, 240, 232, 0.75));
-    }
-
-    .bubble {
-      max-width: 92%;
-      padding: 14px 16px;
-      border-radius: 18px;
-      line-height: 1.5;
-      box-shadow: 0 10px 28px rgba(82, 50, 29, 0.06);
-    }
-
-    .bubble.user {
-      align-self: flex-end;
-      background: #f4d5c3;
-      border-bottom-right-radius: 6px;
-    }
-
-    .bubble.assistant {
-      align-self: flex-start;
-      background: #fffaf3;
-      border: 1px solid var(--line);
-      border-bottom-left-radius: 6px;
-    }
-
-    .bubble.system {
-      align-self: center;
-      background: rgba(255, 248, 238, 0.86);
-      border: 1px dashed #c8b19d;
-      font-size: 0.86rem;
-      color: var(--muted);
-    }
-
-    .logline {
-      font-family: var(--mono);
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    .status-box {
-      border-radius: 16px;
-      padding: 12px 14px;
-      background: #fff7ef;
+    .status-pill {
+      padding: 0.4rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      background: var(--panel-strong);
       border: 1px solid var(--line);
       color: var(--muted);
-      font-size: 0.88rem;
-      line-height: 1.5;
+      white-space: nowrap;
     }
 
-    .status-box.success {
-      border-color: rgba(33, 122, 75, 0.25);
+    .status-pill.ok {
       color: var(--success);
+      border-color: #b3d8c4;
+      background: #edf7f1;
     }
 
-    .status-box.warning {
-      border-color: rgba(143, 91, 22, 0.24);
+    .status-pill.warn {
       color: var(--warning);
+      border-color: #dcc59e;
+      background: #fdf5e8;
     }
 
-    .footer-note {
+    .status-pill.err {
+      color: #a3311b;
+      border-color: #e0b5ab;
+      background: #fdf0ec;
+    }
+
+    /* Web platform narrator strip: mic priming, wake lock, live STT, media session */
+    .narrator-web-rail {
+      display: grid;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(52, 124, 168, 0.08), rgba(208, 99, 47, 0.06));
+      border: 1px solid rgba(100, 89, 79, 0.2);
+    }
+
+    .narrator-web-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .nw-badge {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      padding: 0.28rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(255, 252, 247, 0.85);
+      border: 1px solid var(--line);
       color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.5;
     }
 
-    @media (max-width: 1180px) {
-      .workspace {
-        grid-template-columns: 1fr;
-      }
-
-      .slides-panel {
-        grid-template-columns: 1fr;
-      }
-
-      .thumbs {
-        border-left: none;
-        border-top: 1px solid var(--line);
-        flex-direction: row;
-      }
-
-      .thumb {
-        min-width: 220px;
-      }
+    .nw-badge.nw-badge-on {
+      border-color: rgba(33, 122, 75, 0.45);
+      color: var(--success);
+      background: rgba(236, 252, 244, 0.9);
     }
+
+    .narrator-perm-line {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .narrator-live-line {
+      display: grid;
+      gap: 4px;
+    }
+
+    .narrator-live-state {
+      margin: 0;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      color: var(--accent-deep);
+    }
+
+    .narrator-live-text {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: var(--ink);
+      min-height: 1.45em;
+      font-style: italic;
+    }
+
 
     @media (max-width: 720px) {
       .shell {
-        padding: 14px;
+        padding: 10px;
       }
 
-      .topbar {
-        border-radius: 26px;
+      .toolbar {
+        border-radius: 22px;
+        padding: 10px 14px;
       }
 
       .stage-card {
         min-height: 440px;
         padding: 22px;
       }
+    }
 
-      .grid-two {
-        grid-template-columns: 1fr;
-      }
-
-      .status-strip {
-        margin-left: 0;
-      }
+    .slides-boot-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      margin: 0;
+      padding: 12px 18px;
+      background: #8b2f2f;
+      color: #fffaf8;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      border-bottom: 2px solid #5c2020;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
     }
   </style>
 </head>
 
 <body>
+  <div id="slides-boot-banner" class="slides-boot-banner" hidden role="alert"></div>
+  <script>
+    (function () {
+      function show(msg) {
+        var el = document.getElementById('slides-boot-banner');
+        if (!el) return;
+        el.textContent = msg;
+        el.hidden = false;
+      }
+      window.addEventListener('error', function (e) {
+        if (!e || !e.message) return;
+        if (e.message === 'Script error.') return;
+        show('Script error: ' + e.message);
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e && e.reason;
+        show('Async error: ' + (r && r.message ? r.message : String(r)));
+      });
+      setTimeout(function () {
+        if (window.__kittenSlidesLabReady) return;
+        if (location.protocol === 'file:') {
+          show(
+            'This page must be served over http:// — not file://. From the repo root run: npm run dev, or: python3 -m http.server 3000 --directory docs — then open /slides.html.',
+          );
+        } else {
+          show(
+            'Slides script did not finish loading. Open DevTools → Network and fix any red requests (slides-lab.js, worker.js, bundle.js, slides-ollama.js). Rebuild: npm run build:slides-lab, npm run build:slides-ollama, or npm run build:pages. Hard-refresh (⌘⇧R).',
+          );
+        }
+      }, 6000);
+    })();
+  </script>
+  <div class="page-atmosphere" aria-hidden="true">
+    <span class="page-atmosphere-blob page-atmosphere-blob--a"></span>
+    <span class="page-atmosphere-blob page-atmosphere-blob--b"></span>
+    <span class="page-atmosphere-blob page-atmosphere-blob--c"></span>
+  </div>
   <div class="shell">
-    <div class="topbar">
-      <div class="title-wrap">
-        <div class="eyebrow">Slides Assistant Lab</div>
-        <h1>Side-by-side slides with browser narration, STT, and an LLM hook</h1>
-        <p>Prototype branch for a presenter deck that can talk, listen, and answer with slide context.</p>
-      </div>
-      <div class="status-strip">
-        <div class="chip"><strong>TTS</strong> <span id="tts-chip">idle</span></div>
-        <div class="chip"><strong>STT</strong> <span id="stt-chip">checking</span></div>
-        <div class="chip"><strong>WebGPU</strong> <span id="gpu-chip">checking</span></div>
-        <a class="button-link" href="./index.html">Back to demo</a>
-      </div>
-    </div>
-
-    <div class="workspace">
-      <section class="panel slides-panel">
-        <div class="stage-wrap">
-          <div class="toolbar">
-            <div class="progress" id="progress-text">Slide 1 / 5</div>
+    <div class="presenter-layout">
+      <div class="presenter-main">
+        <div class="toolbar">
+          <div class="toolbar-group">
             <div class="slide-controls">
-              <button id="prev-slide" class="secondary">Previous</button>
-              <button id="next-slide" class="primary">Next</button>
+              <button id="prev-slide" class="secondary">‹</button>
+              <button id="next-slide" class="secondary">›</button>
             </div>
           </div>
-
-          <article class="stage-card">
-            <div class="stage-meta">
-              <div class="stage-kicker" id="slide-kicker"></div>
-              <div class="stage-index" id="slide-index"></div>
-            </div>
-
-            <div class="stage-main">
-              <h2 id="slide-title"></h2>
-              <p class="lede" id="slide-lede"></p>
-              <ul class="bullets" id="slide-bullets"></ul>
-            </div>
-
-            <div class="note-band" id="slide-note-preview"></div>
-          </article>
-
-          <div class="speaker-box">
-            <div class="section-label">Presenter Notes</div>
-            <p id="speaker-notes"></p>
-          </div>
-        </div>
-
-        <aside class="thumbs" id="thumbs"></aside>
-      </section>
-
-      <section class="panel assistant-panel">
-        <div class="assistant-head">
-          <h3>Assistant Pane</h3>
-          <p class="hint">Uses the active slide as context. Narration runs through the existing KittenTTS worker. STT uses the browser speech API when available. LLM responses can be delegated to a future WebGPU adapter.</p>
-        </div>
-
-        <div class="stack">
-          <div class="grid-two">
-            <label>
-              Voice
-              <select id="voice-select">
+          <div class="presenter-actions">
+            <div class="toolbar-field" title="KittenTTS voice for copresenter playback and Read actions">
+              <label class="toolbar-label" for="voice-select">Voice</label>
+              <select id="voice-select" class="toolbar-select" aria-label="Active TTS voice">
                 <option>Bella</option>
-                <option>Luna</option>
-                <option>Rosie</option>
-                <option>Kiki</option>
-                <option selected>Leo</option>
                 <option>Jasper</option>
+                <option>Luna</option>
                 <option>Bruno</option>
+                <option selected>Rosie</option>
                 <option>Hugo</option>
+                <option>Kiki</option>
+                <option>Leo</option>
               </select>
-            </label>
-            <label>
-              Runtime
-              <select id="runtime-select">
-                <option value="auto" selected>Auto</option>
-                <option value="gpu">GPU</option>
-                <option value="cpu">CPU</option>
-              </select>
-            </label>
-            <label>
-              Model
-              <select id="model-select">
-                <option value="KittenML/kitten-tts-nano-0.8-int8" selected>Nano INT8</option>
-                <option value="KittenML/kitten-tts-micro-0.8">Micro</option>
-                <option value="KittenML/kitten-tts-mini-0.8">Mini</option>
-              </select>
-            </label>
-            <label>
-              Speed
-              <select id="speed-select">
-                <option value="0.9">0.90×</option>
-                <option value="1" selected>1.00×</option>
-                <option value="1.1">1.10×</option>
-                <option value="1.2">1.20×</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="tts-controls">
-            <button id="init-tts" class="secondary">Load Narrator</button>
-            <button id="read-slide" class="primary">Read Slide</button>
-            <button id="read-notes" class="secondary">Read Notes</button>
-          </div>
-
-          <div class="stt-controls">
-            <button id="start-stt" class="secondary">Start Listening</button>
-            <button id="stop-stt" class="secondary" disabled>Stop Listening</button>
+            </div>
+            <span class="status-pill" id="assistant-status">Connecting…</span>
+            <button id="present-slides" class="primary">Present</button>
           </div>
         </div>
 
-        <div class="conversation" id="conversation"></div>
-
-        <div class="assistant-foot">
-          <label>
-            Transcript / prompt
-            <textarea id="prompt-input" placeholder="Ask about the current slide, or use browser STT to dictate a question."></textarea>
-          </label>
-
-          <div class="assistant-controls">
-            <button id="ask-assistant" class="primary">Ask Assistant</button>
-            <button id="suggest-question" class="secondary">Suggest a Q&amp;A</button>
-          </div>
-
-          <div class="status-box" id="assistant-status">Ready. The assistant falls back to a local slide-aware responder until a WebGPU LLM adapter is plugged in.</div>
-          <div class="footer-note">Adapter contract: assign <span class="logline">window.slideAssistantAdapter = { async respond({ slide, question, deck, useWebGPU }) }</span> to route answers to a browser LLM.</div>
+        <article class="stage-card" id="stage-card" tabindex="-1" aria-label="Slide stage. Space push-to-talk when narrator is on.">
+      <div class="stage-meta">
+        <div>
+          <div class="stage-kicker" id="slide-kicker"></div>
         </div>
-      </section>
+      </div>
+
+      <div class="stage-main">
+        <div class="stage-copy">
+          <h2 id="slide-title"></h2>
+          <p class="lede" id="slide-lede"></p>
+          <ul class="bullets" id="slide-bullets"></ul>
+        </div>
+      </div>
+
+      <div class="stage-caption-bar" id="stage-caption-bar" hidden>
+        <span class="stage-caption-text" id="stage-caption-text"></span>
+      </div>
+
+      <div class="stage-ptt-hint" id="stage-ptt-hint" hidden>
+        <span id="stage-ptt-hint-text">Press Space to talk</span>
+      </div>
+
+      <div class="stage-overlay" id="stage-overlay"></div>
+      <div class="stage-diagram" id="stage-diagram"></div>
+      <canvas class="stage-fireworks" id="stage-fireworks" aria-hidden="true"></canvas>
+
+      <div class="tool-activity" id="tool-activity" aria-hidden="true">
+        <span class="tool-activity-dot"></span>
+        <span id="tool-activity-label">working…</span>
+      </div>
+
+      <canvas class="stage-waveform" id="stage-waveform" aria-hidden="true"></canvas>
+
+      <div class="stage-slide-ref" id="stage-slide-ref" aria-hidden="true">1 / 15</div>
+
+      <!-- Invisible refs for JS state tracking -->
+      <div id="stage-orb-trigger" hidden></div>
+      <div id="stage-assistant-avatar" data-state="idle" hidden></div>
+        </article>
+      </div>
+
+      <aside class="presenter-rail" id="presenter-rail" hidden aria-label="Presenter tools">
+        <div id="narrator-web-rail" class="narrator-web-rail" hidden>
+          <span id="nw-badge-gum" hidden></span>
+          <span id="nw-badge-wake" hidden></span>
+          <span id="nw-badge-media" hidden></span>
+          <span id="nw-badge-vibrate" hidden></span>
+          <p id="narrator-perm-line"></p>
+          <p id="narrator-live-state"></p>
+          <p id="narrator-live-text"></p>
+        </div>
+        <div class="tool-commands-ref" id="tool-commands-ref" hidden>
+          <h3>Kiki tools (voice)</h3>
+          <ul>
+            <li><code>highlight_text</code> — <code>text</code></li>
+            <li><code>emphasize_bullet</code> — <code>index</code> (1-based)</li>
+            <li><code>go_to_slide</code> — <code>slide_number</code></li>
+            <li><code>show_overlay</code> — <code>text</code>; duration enum 3/5/8/10/15s</li>
+            <li><code>set_voice</code> — <code>voice</code> (Bella … Leo)</li>
+            <li><code>diagram_live_stack</code>, <code>diagram_reinforcement_loop</code>, <code>diagram_scoring_flow</code> — no args. <strong>Shortcuts:</strong> <kbd>Alt</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>) — press again to <strong>close</strong> that diagram. <kbd>Alt</kbd>+<kbd>0</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>0</kbd> closes <strong>any</strong> diagram.</li>
+            <li><code>fireworks</code> — duration enum 1–8s. <strong>Shortcut:</strong> <kbd>Alt</kbd>+<kbd>4</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd>. <kbd>Esc</kbd>: close diagram if open, else exit <strong>presentation</strong> (fullscreen), else narrator reset (<kbd>Shift</kbd>+<kbd>Esc</kbd> turns narrator off).</li>
+          </ul>
+        </div>
+        <div id="assistant-debug-panel" class="assistant-debug-panel" hidden>
+          <div class="assistant-debug-header">
+            <strong>Assistant debug</strong>
+            <button type="button" id="assistant-debug-clear">Clear log</button>
+          </div>
+          <div id="assistant-debug-log" class="assistant-debug-log" aria-live="polite"></div>
+          <p class="assistant-debug-hint">
+            Enable: add <code>?debug=1</code> to the URL, or
+            <code>localStorage.setItem('kittenSlidesDebug','1')</code> then reload.
+            Console: <code>kittenSlidesAssistantDebug</code>.
+          </p>
+        </div>
+      </aside>
     </div>
+
+    <!-- Hidden config (auto-selected, no UI) -->
+    <div id="slide-lab-hidden-config" hidden aria-hidden="true">
+      <select id="runtime-select"><option value="auto">Auto</option><option value="gpu">GPU</option><option value="cpu">CPU</option></select>
+      <select id="model-select">
+        <option value="onnx-community/KittenTTS-Nano-v0.8-ONNX">Nano ONNX</option>
+        <option value="onnx-community/KittenTTS-Micro-v0.8-ONNX">Micro ONNX</option>
+        <option value="onnx-community/KittenTTS-Mini-v0.8-ONNX">Mini ONNX</option>
+      </select>
+      <select id="speed-select"><option value="1" selected>1.00×</option></select>
+      <select id="stt-lang-select">
+        <option value="en-US">English (US)</option>
+        <option value="en-GB">English (UK)</option>
+        <option value="lt-LT">Lietuvių</option>
+      </select>
+      <input id="ollama-url" type="hidden" value="http://localhost:11434" />
+      <input id="ollama-model-select" type="hidden" value="ministral-3:8b-cloud" />
+    </div>
+
+    <!-- Invisible refs needed by existing JS -->
+    <span id="tts-chip" hidden></span>
+    <span id="stt-chip" hidden></span>
+    <span id="gpu-chip" hidden></span>
+    <span id="llm-chip" hidden></span>
+    <span id="lab-auto-summary" hidden></span>
+    <span id="ollama-progress" hidden></span>
   </div>
 
-  <script type="module">
-    const deck = [
-      {
-        kicker: 'Why now',
-        title: 'Turn a slide deck into a live assistant surface.',
-        lede: 'The deck should not just render static bullets. It should narrate, listen, and answer in context while the presenter stays in flow.',
-        bullets: [
-          'Slides remain the primary visual artifact.',
-          'An assistant pane handles narration, Q&A, and rehearsal prompts.',
-          'All interaction stays browser-native so demos are portable.',
-        ],
-        notes: 'Open with the idea that the presenter no longer juggles separate tabs for speech, notes, and questions. The deck becomes the interface.',
-      },
-      {
-        kicker: 'KittenTTS role',
-        title: 'KittenTTS reads either the audience slide or the private presenter notes.',
-        lede: 'The existing worker already gives us a browser-safe narration backend. We can narrate the polished slide copy or a denser speaker script.',
-        bullets: [
-          'Speaker can choose slide copy versus hidden notes.',
-          'Voice, speed, and runtime stay adjustable in the pane.',
-          'Narration is local to the browser after model load.',
-        ],
-        notes: 'This is the shortest path to something real: reuse worker.js, keep TTS out of the main thread, and surface a simple control strip for rehearsal.',
-      },
-      {
-        kicker: 'Assistant path',
-        title: 'A browser LLM should see the active slide, the full deck, and the live question.',
-        lede: 'The answer quality depends on deck context. A slide-aware adapter can summarize, expand, or challenge the current talking points.',
-        bullets: [
-          'Prefer WebGPU when the browser exposes it.',
-          'Fall back cleanly when no local model adapter is attached.',
-          'Keep the adapter boundary explicit so model choice stays swappable.',
-        ],
-        notes: 'The branch only needs the integration seam today. The actual LLM can be WebLLM, Transformers.js, or another browser-first runtime later.',
-      },
-      {
-        kicker: 'STT loop',
-        title: 'Web STT closes the rehearsal loop for spoken Q&A.',
-        lede: 'If the presenter speaks a likely audience question, the assistant can transcribe it and answer against the current slide state.',
-        bullets: [
-          'Use browser speech recognition when available.',
-          'Keep manual text entry as the universal fallback.',
-          'Store the transcript directly in the prompt box for editing.',
-        ],
-        notes: 'The important behavior is graceful degradation. STT should be additive, not a hard requirement for the deck to work.',
-      },
-      {
-        kicker: 'What this branch proves',
-        title: 'We can start with a thin, useful prototype and deepen it incrementally.',
-        lede: 'This branch is the working lab: visible slide state, narration controls, STT wiring, and an LLM adapter hook in one page.',
-        bullets: [
-          'Prototype on a dedicated branch instead of bloating the main demo.',
-          'Validate the UX before choosing the permanent model stack.',
-          'Commit to one browser page that feels like the product, not a note dump.',
-        ],
-        notes: 'End by asking which model runtime and deck format should become first-class next: Markdown slides, JSON slides, or generated slide scripts.',
-      },
-    ];
-
-    const worker = new Worker('./worker.js', { type: 'module' });
-    const pendingRequests = new Map();
-    let currentSlideIndex = 0;
-    let ttsReady = false;
-    let listening = false;
-
-    const recognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition || null;
-    const recognition = recognitionCtor ? new recognitionCtor() : null;
-
-    const slideKickerEl = document.getElementById('slide-kicker');
-    const slideIndexEl = document.getElementById('slide-index');
-    const slideTitleEl = document.getElementById('slide-title');
-    const slideLedeEl = document.getElementById('slide-lede');
-    const slideBulletsEl = document.getElementById('slide-bullets');
-    const slideNotePreviewEl = document.getElementById('slide-note-preview');
-    const speakerNotesEl = document.getElementById('speaker-notes');
-    const thumbsEl = document.getElementById('thumbs');
-    const progressTextEl = document.getElementById('progress-text');
-    const conversationEl = document.getElementById('conversation');
-    const promptInputEl = document.getElementById('prompt-input');
-    const assistantStatusEl = document.getElementById('assistant-status');
-    const ttsChipEl = document.getElementById('tts-chip');
-    const sttChipEl = document.getElementById('stt-chip');
-    const gpuChipEl = document.getElementById('gpu-chip');
-    const initTtsBtn = document.getElementById('init-tts');
-    const readSlideBtn = document.getElementById('read-slide');
-    const readNotesBtn = document.getElementById('read-notes');
-    const startSttBtn = document.getElementById('start-stt');
-    const stopSttBtn = document.getElementById('stop-stt');
-    const askAssistantBtn = document.getElementById('ask-assistant');
-    const suggestQuestionBtn = document.getElementById('suggest-question');
-    const voiceSelectEl = document.getElementById('voice-select');
-    const runtimeSelectEl = document.getElementById('runtime-select');
-    const modelSelectEl = document.getElementById('model-select');
-    const speedSelectEl = document.getElementById('speed-select');
-
-    worker.onmessage = (event) => {
-      const { type, id, payload } = event.data;
-      if (!pendingRequests.has(id)) return;
-      const request = pendingRequests.get(id);
-      if (type === 'error') {
-        request.reject(new Error(payload));
-      } else {
-        request.resolve(payload);
-      }
-      pendingRequests.delete(id);
-    };
-
-    function postToWorker(type, payload) {
-      return new Promise((resolve, reject) => {
-        const id = `${Date.now()}-${Math.random()}`;
-        pendingRequests.set(id, { resolve, reject });
-        worker.postMessage({ type, id, payload });
-      });
-    }
-
-    function getActiveSlide() {
-      return deck[currentSlideIndex];
-    }
-
-    function updateStatus(message, kind = '') {
-      assistantStatusEl.textContent = message;
-      assistantStatusEl.className = kind ? `status-box ${kind}` : 'status-box';
-    }
-
-    function addBubble(role, text) {
-      const bubble = document.createElement('div');
-      bubble.className = `bubble ${role}`;
-      bubble.textContent = text;
-      conversationEl.appendChild(bubble);
-      conversationEl.scrollTop = conversationEl.scrollHeight;
-    }
-
-    function renderThumbs() {
-      thumbsEl.innerHTML = '';
-      deck.forEach((slide, index) => {
-        const button = document.createElement('button');
-        button.className = `thumb${index === currentSlideIndex ? ' active' : ''}`;
-        button.innerHTML = `<strong>${index + 1}. ${slide.title}</strong><span>${slide.kicker}</span>`;
-        button.addEventListener('click', () => {
-          currentSlideIndex = index;
-          renderSlide();
-        });
-        thumbsEl.appendChild(button);
-      });
-    }
-
-    function renderSlide() {
-      const slide = getActiveSlide();
-      slideKickerEl.textContent = slide.kicker;
-      slideIndexEl.textContent = `${currentSlideIndex + 1} / ${deck.length}`;
-      slideTitleEl.textContent = slide.title;
-      slideLedeEl.textContent = slide.lede;
-      slideNotePreviewEl.textContent = slide.notes;
-      speakerNotesEl.textContent = slide.notes;
-      progressTextEl.textContent = `Slide ${currentSlideIndex + 1} / ${deck.length}`;
-      slideBulletsEl.innerHTML = '';
-      slide.bullets.forEach((bullet) => {
-        const item = document.createElement('li');
-        item.textContent = bullet;
-        slideBulletsEl.appendChild(item);
-      });
-      renderThumbs();
-    }
-
-    async function detectCapabilities() {
-      gpuChipEl.textContent = navigator.gpu ? 'available' : 'not available';
-      sttChipEl.textContent = recognition ? 'available' : 'not available';
-      if (!recognition) {
-        startSttBtn.disabled = true;
-        stopSttBtn.disabled = true;
-      }
-    }
-
-    async function ensureTtsReady() {
-      if (ttsReady) return;
-      updateStatus('Loading KittenTTS worker for the slides lab…');
-      const payload = await postToWorker('init', {
-        modelId: modelSelectEl.value,
-        runtime: runtimeSelectEl.value,
-        wasmThreads: 4,
-        wasmSimd: true,
-      });
-      ttsReady = true;
-      ttsChipEl.textContent = payload.runtimeActual || payload.runtimeRequested || 'ready';
-      updateStatus('Narrator ready. You can read the slide or notes aloud.', 'success');
-    }
-
-    function createWavBlob(floatArr, sampleRate) {
-      const pcm16 = new Int16Array(floatArr.length);
-      for (let i = 0; i < floatArr.length; i += 1) {
-        const sample = Math.max(-1, Math.min(1, floatArr[i]));
-        pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
-      }
-
-      const buffer = new ArrayBuffer(44 + pcm16.length * 2);
-      const view = new DataView(buffer);
-      const writeString = (offset, text) => {
-        for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
-      };
-
-      writeString(0, 'RIFF');
-      view.setUint32(4, 36 + pcm16.length * 2, true);
-      writeString(8, 'WAVE');
-      writeString(12, 'fmt ');
-      view.setUint32(16, 16, true);
-      view.setUint16(20, 1, true);
-      view.setUint16(22, 1, true);
-      view.setUint32(24, sampleRate, true);
-      view.setUint32(28, sampleRate * 2, true);
-      view.setUint16(32, 2, true);
-      view.setUint16(34, 16, true);
-      writeString(36, 'data');
-      view.setUint32(40, pcm16.length * 2, true);
-
-      let offset = 44;
-      for (let i = 0; i < pcm16.length; i += 1, offset += 2) {
-        view.setInt16(offset, pcm16[i], true);
-      }
-      return new Blob([buffer], { type: 'audio/wav' });
-    }
-
-    async function narrate(text, label) {
-      await ensureTtsReady();
-      updateStatus(`Generating narration for ${label}…`);
-      const result = await postToWorker('generate', {
-        text,
-        voice: voiceSelectEl.value,
-        speed: Number(speedSelectEl.value),
-      });
-      const blob = createWavBlob(result.floatArr, result.sampleRate);
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      await audio.play();
-      ttsChipEl.textContent = `speaking ${voiceSelectEl.value}`;
-      audio.addEventListener('ended', () => {
-        URL.revokeObjectURL(url);
-        ttsChipEl.textContent = 'ready';
-      }, { once: true });
-      updateStatus(`Narrating ${label}.`, 'success');
-    }
-
-    function buildSlideNarration(slide) {
-      return [slide.title, slide.lede, ...slide.bullets].join('. ');
-    }
-
-    function buildSlideContext(slide) {
-      return `Slide: ${slide.title}\nKicker: ${slide.kicker}\nSummary: ${slide.lede}\nBullets:\n- ${slide.bullets.join('\n- ')}\nNotes: ${slide.notes}`;
-    }
-
-    function localAssistantReply(slide, question) {
-      const normalized = question.toLowerCase();
-      if (normalized.includes('summary') || normalized.includes('summarize')) {
-        return `${slide.title}: ${slide.lede} Key points: ${slide.bullets.join('; ')}.`;
-      }
-      if (normalized.includes('risk') || normalized.includes('concern')) {
-        return `The main risk on this slide is integration complexity. We still need a concrete browser LLM backend, but the slide-aware assistant boundary is already isolated.`;
-      }
-      if (normalized.includes('next') || normalized.includes('plan')) {
-        return `Next, wire a real WebGPU-capable model behind window.slideAssistantAdapter, decide a slide source format, and add presenter-state persistence.`;
-      }
-      return `Using the active slide context, I would answer: ${slide.lede} The strongest support points are ${slide.bullets.join(', ')}.`;
-    }
-
-    async function askAssistant(question) {
-      const slide = getActiveSlide();
-      addBubble('user', question);
-      updateStatus('Thinking with the active slide context…');
-
-      try {
-        let answer;
-        if (window.slideAssistantAdapter?.respond) {
-          answer = await window.slideAssistantAdapter.respond({
-            slide,
-            question,
-            deck,
-            useWebGPU: Boolean(navigator.gpu),
-            context: buildSlideContext(slide),
-          });
-        } else {
-          answer = localAssistantReply(slide, question);
-        }
-
-        addBubble('assistant', answer);
-        updateStatus(window.slideAssistantAdapter?.respond
-          ? 'Assistant responded through the external slide adapter.'
-          : 'Assistant responded with the local slide-aware fallback. Plug in a WebGPU adapter for live model answers.', 'success');
-      } catch (error) {
-        addBubble('system', `Assistant error: ${error.message}`);
-        updateStatus(`Assistant error: ${error.message}`, 'warning');
-      }
-    }
-
-    if (recognition) {
-      recognition.lang = 'en-US';
-      recognition.continuous = false;
-      recognition.interimResults = true;
-
-      recognition.onstart = () => {
-        listening = true;
-        sttChipEl.textContent = 'listening';
-        startSttBtn.disabled = true;
-        stopSttBtn.disabled = false;
-        updateStatus('Listening for a spoken question…');
-      };
-
-      recognition.onend = () => {
-        listening = false;
-        sttChipEl.textContent = 'ready';
-        startSttBtn.disabled = false;
-        stopSttBtn.disabled = true;
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map((result) => result[0]?.transcript || '')
-          .join(' ')
-          .trim();
-        promptInputEl.value = transcript;
-      };
-
-      recognition.onerror = (event) => {
-        updateStatus(`STT error: ${event.error}`, 'warning');
-      };
-    }
-
-    document.getElementById('prev-slide').addEventListener('click', () => {
-      currentSlideIndex = (currentSlideIndex - 1 + deck.length) % deck.length;
-      renderSlide();
-    });
-
-    document.getElementById('next-slide').addEventListener('click', () => {
-      currentSlideIndex = (currentSlideIndex + 1) % deck.length;
-      renderSlide();
-    });
-
-    initTtsBtn.addEventListener('click', async () => {
-      try {
-        await ensureTtsReady();
-      } catch (error) {
-        updateStatus(`TTS init failed: ${error.message}`, 'warning');
-      }
-    });
-
-    readSlideBtn.addEventListener('click', async () => {
-      try {
-        await narrate(buildSlideNarration(getActiveSlide()), 'the active slide');
-      } catch (error) {
-        updateStatus(`Narration failed: ${error.message}`, 'warning');
-      }
-    });
-
-    readNotesBtn.addEventListener('click', async () => {
-      try {
-        await narrate(getActiveSlide().notes, 'presenter notes');
-      } catch (error) {
-        updateStatus(`Narration failed: ${error.message}`, 'warning');
-      }
-    });
-
-    startSttBtn.addEventListener('click', () => {
-      if (!recognition || listening) return;
-      recognition.start();
-    });
-
-    stopSttBtn.addEventListener('click', () => {
-      if (!recognition || !listening) return;
-      recognition.stop();
-    });
-
-    askAssistantBtn.addEventListener('click', async () => {
-      const question = promptInputEl.value.trim();
-      if (!question) {
-        updateStatus('Enter or dictate a question first.', 'warning');
-        return;
-      }
-      await askAssistant(question);
-    });
-
-    suggestQuestionBtn.addEventListener('click', () => {
-      const slide = getActiveSlide();
-      promptInputEl.value = `What is the strongest demo path for slide ${currentSlideIndex + 1}, and what would an audience likely ask about ${slide.kicker.toLowerCase()}?`;
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.target instanceof HTMLTextAreaElement) return;
-      if (event.key === 'ArrowRight') {
-        currentSlideIndex = (currentSlideIndex + 1) % deck.length;
-        renderSlide();
-      }
-      if (event.key === 'ArrowLeft') {
-        currentSlideIndex = (currentSlideIndex - 1 + deck.length) % deck.length;
-        renderSlide();
-      }
-    });
-
-    renderSlide();
-    detectCapabilities();
-    addBubble('system', 'Slides lab booted. Load the narrator, dictate a question, or attach window.slideAssistantAdapter for a real browser LLM.');
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <!-- Deck UI + STT/TTS: src/slides-lab.ts → npm run build:slides-lab → slides-lab.js. Ollama: src/slides-ollama-assistant.ts → slides-ollama.js. -->
+  <script type="module" src="./slides-lab.js"></script>
 </body>
 
 </html>

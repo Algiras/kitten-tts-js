@@ -1,4 +1,7 @@
 node_modules/
+.DS_Store
+.copilot/
+
 .env
 .venv/
 .venv-bench/
@@ -12,6 +15,8 @@ __pycache__/
 .cache/
 dist/
 docs/bundle.js
+docs/slides-ollama.js
+docs/slides-lab.js
 docs/*.wasm
 docs/*.mjs
 docs/*.data

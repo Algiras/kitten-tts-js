@@ -143,7 +143,7 @@ If port `4173` is already occupied, the command now exits with an explicit error
 
 This serves [`docs/index.html`](./docs/index.html), where you can type text, pick voice/model, and generate speech directly in the browser.
 
-The repo also includes [`docs/slides.html`](./docs/slides.html), a slides-plus-assistant lab that pairs a presentation stage with a side-by-side browser assistant pane. The prototype reuses KittenTTS for narration, exposes browser STT when available, and leaves a clean `window.slideAssistantAdapter` hook for a future WebGPU-backed browser LLM.
+The repo also includes [`docs/slides.html`](./docs/slides.html), a slides-plus-assistant lab that pairs a presentation stage with a walkie-talkie copresenter. It uses KittenTTS for speech output, browser STT for input, and **[Ollama](https://ollama.com/)** on localhost as the LLM backend. Press **Space** to talk, **Space** again to interrupt, **Esc** to exit. Requires `ollama serve` with `OLLAMA_ORIGINS=*`.
 
 ### Browser (Web Worker — recommended for production)
 
@@ -319,10 +319,9 @@ Kitten JS outputs:
 - [js-mini-en.wav](./review-audio/js-mini-en.wav)
 - [js-mini-lt.wav](./review-audio/js-mini-lt.wav)
 
-Kokoro vs Kitten single-sample outputs:
+Single-sample output:
 
 - [kitten-tts-leo.wav](./review-audio/kitten-tts-leo.wav)
-- [kokoro-af_heart.wav](./review-audio/kokoro-af_heart.wav)
 
 Original parity references:
 
