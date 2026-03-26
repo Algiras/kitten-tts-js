@@ -33,6 +33,7 @@ const DEFAULT_VOICE = 'Leo';
 // Minimal ORT interfaces (works for both onnxruntime-web and onnxruntime-node)
 interface OrtTensor {
   data: Float32Array;
+  dispose(): void;
 }
 
 interface OrtInferenceSession {
@@ -352,10 +353,22 @@ export class KittenTTS {
       speed: speedTensor,
     };
 
-    const results = await this._session!.run(feeds);
+    let results: Record<string, OrtTensor>;
+    try {
+      results = await this._session!.run(feeds);
+    } finally {
+      inputIdsTensor.dispose();
+      styleTensor.dispose();
+      speedTensor.dispose();
+    }
+
     const outputKey = Object.keys(results)[0];
     const audioData = results[outputKey].data;
     const trimmed = audioData.slice(0, Math.max(0, audioData.length - AUDIO_TRIM));
-    return new Float32Array(trimmed);
+    const copy = new Float32Array(trimmed);
+    for (const k of Object.keys(results)) {
+      results[k].dispose();
+    }
+    return copy;
   }
 }

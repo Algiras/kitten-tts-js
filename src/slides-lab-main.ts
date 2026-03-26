@@ -193,7 +193,8 @@ const deck = [
 const SLIDES_LAB_TTS_NANO_ONNX = 'onnx-community/KittenTTS-Nano-v0.8-ONNX';
 const SLIDES_LAB_TTS_MINI_ONNX = 'onnx-community/KittenTTS-Mini-v0.8-ONNX';
 
-const worker = new Worker('./worker.js', { type: 'module' });
+/** Root-relative so URL matches slides.html whether opened as /slides, /slides/, or /slides.html. */
+const worker = new Worker('/worker.js', { type: 'module' });
 const pendingRequests = new Map();
 let currentSlideIndex = 0;
 let ttsReady = false;
@@ -224,9 +225,13 @@ const sttChipEl = document.getElementById('stt-chip');
 const gpuChipEl = document.getElementById('gpu-chip');
 const llmChipEl = document.getElementById('llm-chip');
 const ollamaUrlEl = document.getElementById('ollama-url');
-const ollamaModelSelectEl = document.getElementById('ollama-model-select');
 const ollamaProgressEl = document.getElementById('ollama-progress');
 const presentSlidesBtn = document.getElementById('present-slides');
+const llmContextMeterEl = document.getElementById('llm-context-meter');
+const llmContextWrapEl = document.getElementById('llm-context-wrap');
+const llmContextIndEl = document.getElementById('llm-context-ind');
+const stageLlmContextRingEl = document.getElementById('stage-llm-context-ring');
+const stageLlmContextIndEl = document.getElementById('stage-llm-context-ind');
 const voiceSelectEl = document.getElementById('voice-select');
 const runtimeSelectEl = document.getElementById('runtime-select');
 const modelSelectEl = document.getElementById('model-select');
@@ -266,6 +271,14 @@ function pickSttLanguageFromNavigator() {
   sttLangSelectEl.value = byPrefix || 'en-US';
 }
 
+/** Read LLM `<select>` when needed — do not cache at module load (can be null if script order changes). */
+function getOllamaModelIdFromDom() {
+  const el = document.getElementById('ollama-model-select');
+  const raw = el && 'value' in el ? String(el.value) : '';
+  const t = raw.trim();
+  return t || 'qwen3.5:2b';
+}
+
 function updateLabAutoSummary() {
   const el = document.getElementById('lab-auto-summary');
   if (!el) return;
@@ -273,7 +286,8 @@ function updateLabAutoSummary() {
   const ttsLine = gpu ? 'TTS: Nano ONNX, GPU runtime' : 'TTS: Mini ONNX, auto runtime';
   const stt = sttLangSelectEl?.value || 'en-US';
   const v = voiceSelectEl?.value || 'Rosie';
-  el.textContent = `${ttsLine} · voice ${v} · STT ${stt} · LLM: Ollama, streaming TTS`;
+  const llm = getOllamaModelIdFromDom();
+  el.textContent = `${ttsLine} · voice ${v} · STT ${stt} · LLM ${llm}`;
 }
 
 function applySlideLabAutopilot() {
@@ -1661,7 +1675,67 @@ async function executeToolCall(call) {
 }
 
 // --- Ollama adapter bridge (prompt construction + conversation management) ---
+/** Prune + summarize threshold; UI meter uses the same budget (est. tokens chars÷3.5). */
+const OLLAMA_HISTORY_TOKEN_BUDGET = 8000;
+/** Minimum non-system messages to keep verbatim when summarizing older turns. */
+const OLLAMA_SUMMARY_TAIL_MIN = 6;
+/** Only call the summarizer if the dropped prefix is at least this heavy (est. tokens). */
+const OLLAMA_SUMMARY_MIN_HEAD_TOKENS = 400;
+/** Cap for the summarizer completion (`num_predict`). */
+const OLLAMA_SUMMARY_MAX_TOKENS = 360;
 const ollamaConversation = { messages: [], lastSessionKey: null };
+
+/** Ollama-reported prompt/output tokens from the last copresenter `chat()` (not prewarm). */
+let lastCopresenterOllamaUsage = null;
+
+/**
+ * Persist only user + assistant text for the next turn. Drops `tool` rows and `tool_calls` so replays
+ * do not bloat context; tools still run on each fresh request via Ollama.
+ */
+function compactHistoryToTextOnly(msgs) {
+  if (!Array.isArray(msgs) || msgs.length === 0) return [];
+  const out = [];
+  let i = 0;
+  if (msgs[0]?.role === 'system') {
+    out.push({ role: 'system', content: msgs[0].content });
+    i = 1;
+  }
+  for (; i < msgs.length; i += 1) {
+    const m = msgs[i];
+    if (!m || typeof m !== 'object') continue;
+    if (m.role === 'tool') continue;
+    if (m.role === 'user') {
+      out.push({
+        role: 'user',
+        content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
+      });
+      continue;
+    }
+    if (m.role === 'assistant') {
+      const c = typeof m.content === 'string' ? m.content.trim() : '';
+      const hasTools = Array.isArray(m.tool_calls) && m.tool_calls.length > 0;
+      let text = c;
+      if (!text && hasTools) text = '(Stage tools only.)';
+      if (!text) text = ' ';
+      out.push({ role: 'assistant', content: text });
+      continue;
+    }
+  }
+  return out;
+}
+
+/** For skipping consecutive duplicate TTS lines (small local models often repeat the same phrase across tool rounds). */
+function normalizeSpokenSentenceKey(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function shouldDedupeSpokenSentence(norm) {
+  return norm.length >= 12 || norm.split(/\s+/).filter(Boolean).length >= 3;
+}
 
 const OLLAMA_SLIDE_SYSTEM_PROMPT = [
   'You are Kiki, Algimantas\u2019s assistant speaker and copresenter on stage at a tech talk.',
@@ -1681,6 +1755,7 @@ const OLLAMA_SLIDE_SYSTEM_PROMPT = [
   '- NO emoji. Avoid filler like "Sure!" or "Great question!"',
   '- Use periods for pauses between thoughts. Commas for short breaths. The TTS engine reads your text aloud and uses punctuation for pacing.',
   '- Keep it under 2-3 sentences. Brevity is king on stage.',
+  '- Never say the same spoken sentence twice in one reply. If you already said a line, do not echo it again after a tool call — add new substance or stay silent.',
   '- Never break character. You are Kiki the copresenter, not an AI assistant.',
   '- When Algimantas says something short like "thanks" or "okay", reply with one punchy line.',
   '',
@@ -1691,6 +1766,8 @@ const OLLAMA_SLIDE_SYSTEM_PROMPT = [
   '- Never prefix lines with labels like "Action:", "Narration:", or "Stage:".',
   '',
   'CONTEXT: You hear Algimantas via speech-to-text. The slide info is background — respond to what Algimantas SAID.',
+  '- A user message starting with [Earlier conversation — memory for Kiki only] is a compressed recap of prior turns, not something Algimantas just said into the mic.',
+  '- Persisted chat history is text-only: past tool calls and tool results are not replayed to save context. Use tools freely on each new turn when it helps.',
   '',
   'STREAM SLIDE ACTIONS — use only the API tool / function calls Ollama provides (streamed `tool_calls`). The host runs them in deck order. Pass JSON arguments per each tool schema; invented tool names are ignored.',
   'Tools: highlight_text, emphasize_bullet, go_to_slide, set_voice, show_overlay, diagram_live_stack, diagram_reinforcement_loop, diagram_scoring_flow, fireworks. Diagram tools use empty arguments {}. set_voice.voice is one of: Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo.',
@@ -1709,14 +1786,14 @@ const OLLAMA_SLIDE_SYSTEM_PROMPT = [
   ` emphasize_bullet index runs 1–${Math.max(deck.reduce((m, s) => Math.max(m, (s.bullets || []).length), 0), 1)} (max bullets on any slide).` +
   ` set_voice.voice must be one of: ${KITTEN_TTS_VOICE_OPTIONS.join(', ')}.`;
 
-function ollamaPruneConversation(maxTokens = 6000) {
+function ollamaPruneConversation(maxTokens = OLLAMA_HISTORY_TOKEN_BUDGET) {
   const msgs = ollamaConversation.messages;
   if (msgs.length <= 1) return;
   const sys = msgs[0];
-  let budget = maxTokens - estimateTokens(sys.content);
+  let budget = maxTokens - Math.ceil(messageRoughChars(sys) / 3.5);
   const keep = [];
   for (let i = msgs.length - 1; i >= 1; i--) {
-    const cost = estimateTokens(msgs[i].content);
+    const cost = Math.ceil(messageRoughChars(msgs[i]) / 3.5);
     if (budget - cost < 0) break;
     keep.unshift(msgs[i]);
     budget -= cost;
@@ -1813,6 +1890,8 @@ window.kittenSlidesAssistantDebug = {
   },
   clear: clearAssistantDebugLog,
   log: (kind, detail) => pushAssistantDebug(kind || 'manual', detail ?? ''),
+  getContextStats: () => getOllamaConversationContextStats(),
+  refreshContextMeter: () => updateLlmContextMeter(),
 };
 
 function installOllamaAdapter() {
@@ -1844,21 +1923,45 @@ function installOllamaAdapter() {
             ]
           : [...ollamaConversation.messages, { role: 'user', content: userContent }];
 
+      let payloadChars = 0;
+      for (let mi = 0; mi < chatMessages.length; mi += 1) payloadChars += messageRoughChars(chatMessages[mi]);
       pushAssistantDebug('llm_request', {
         slideOrdinal,
         title,
         question,
         userMessageChars: userContent.length,
         streaming: Boolean(onSentence),
+        payloadChars,
+        payloadTokensEst: Math.ceil(payloadChars / 3.5),
+        historyMessages: chatMessages.length,
       });
       pushAssistantDebug('llm_context_preview', {
         chars: (context || '').length,
         preview: (context || '').slice(0, 900),
       });
 
+      let lastTtsNorm = '';
+      const onSentenceDeduped =
+        typeof onSentence === 'function'
+          ? async (sentence) => {
+              const norm = normalizeSpokenSentenceKey(sentence);
+              if (shouldDedupeSpokenSentence(norm) && norm === lastTtsNorm) {
+                pushAssistantDebug('tts_sentence_skipped_duplicate', {
+                  text: String(sentence || '').slice(0, 240),
+                });
+                return;
+              }
+              if (shouldDedupeSpokenSentence(norm)) lastTtsNorm = norm;
+              await onSentence(sentence);
+            }
+          : undefined;
+
+      const historyLenBeforeTurn = chatMessages.length;
+
       const answer = await k.chat({
         messages: chatMessages,
-        onSentence,
+        think: false,
+        onSentence: onSentenceDeduped,
         onToolCall: async (call) => {
           const name = call?.function?.name || '?';
           const rawArgs = call?.function?.arguments;
@@ -1878,12 +1981,23 @@ function installOllamaAdapter() {
         isStale,
       });
 
-      if (isStale?.()) return '';
+      if (isStale?.()) {
+        const dropped = chatMessages.length - historyLenBeforeTurn;
+        while (chatMessages.length > historyLenBeforeTurn) chatMessages.pop();
+        pushAssistantDebug('llm_interrupted', {
+          droppedRows: dropped,
+          note: 'Space interrupt — partial model/tool rows discarded; history unchanged.',
+        });
+        updateLlmContextMeter();
+        return '';
+      }
 
       pushAssistantDebug('llm_reply', {
         chars: (answer || '').length,
         text: answer || '',
       });
+
+      const mainTurnUsage = window.kittenSlidesOllama?.getLastChatUsage?.() ?? null;
 
       ollamaConversation.lastSessionKey = sessionKey;
 
@@ -1894,8 +2008,15 @@ function installOllamaAdapter() {
           content: answer && String(answer).trim().length > 0 ? answer : ' ',
         });
       }
-      ollamaConversation.messages = chatMessages;
+      ollamaConversation.messages = compactHistoryToTextOnly(chatMessages);
+      await maybeSummarizeOllamaHistory(k);
       ollamaPruneConversation();
+      lastCopresenterOllamaUsage = mainTurnUsage;
+      updateLlmContextMeter();
+      pushAssistantDebug('llm_context_size', {
+        ...getOllamaConversationContextStats(),
+        ollamaLastTurn: lastCopresenterOllamaUsage,
+      });
 
       return answer || 'I could not produce an answer. Try rephrasing your question.';
     },
@@ -1905,6 +2026,8 @@ function installOllamaAdapter() {
 function uninstallOllamaAdapter() {
   ollamaConversation.messages = [];
   ollamaConversation.lastSessionKey = null;
+  lastCopresenterOllamaUsage = null;
+  updateLlmContextMeter();
   if (window.slideAssistantAdapter?.respond?.name === 'ollamaAdapterRespond') {
     delete window.slideAssistantAdapter;
   }
@@ -1933,6 +2056,222 @@ function mergedSlideAt(index) {
 
 function estimateTokens(text) {
   return Math.ceil((text || '').length / 3.5);
+}
+
+function stringifyForTokenEstimate(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+/** Serialized-ish size of one message row (role + content + native tool_calls / tool rows). */
+function messageRoughChars(m) {
+  if (!m || typeof m !== 'object') return 0;
+  let s = `${m.role || ''}\n`;
+  if (typeof m.content === 'string') s += m.content;
+  else s += stringifyForTokenEstimate(m.content);
+  if (typeof m.tool_name === 'string' && m.tool_name.length) s += `\n${m.tool_name}`;
+  if (Array.isArray(m.tool_calls) && m.tool_calls.length) s += stringifyForTokenEstimate(m.tool_calls);
+  return s.length;
+}
+
+function formatCtxTokShort(n) {
+  if (n >= 10000) return `${Math.round(n / 1000)}k`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(Math.round(n));
+}
+
+function getOllamaConversationContextStats(budget = OLLAMA_HISTORY_TOKEN_BUDGET) {
+  const msgs = ollamaConversation.messages;
+  let chars = 0;
+  for (let i = 0; i < msgs.length; i += 1) chars += messageRoughChars(msgs[i]);
+  const tokensEst = Math.ceil(chars / 3.5);
+  const pct = budget > 0 ? Math.min(100, Math.round((tokensEst / budget) * 100)) : 0;
+  return {
+    messages: msgs.length,
+    chars,
+    tokensEst,
+    budget,
+    pct,
+  };
+}
+
+/** Matches `r="14"` on the context SVG circles (user units). */
+const LLM_CTX_RING_R = 14;
+const LLM_CTX_RING_LEN = 2 * Math.PI * LLM_CTX_RING_R;
+
+function setLlmContextRingFill(pct01To100) {
+  const p = Math.min(100, Math.max(0, Number(pct01To100) || 0));
+  const dashLen = LLM_CTX_RING_LEN;
+  const off = dashLen * (1 - p / 100);
+  const dashStr = String(dashLen);
+  const offStr = String(off);
+  for (const id of ['llm-context-ind', 'stage-llm-context-ind']) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.setAttribute('stroke-dasharray', dashStr);
+    el.setAttribute('stroke-dashoffset', offStr);
+    if (el instanceof SVGElement) {
+      el.style.strokeDasharray = dashStr;
+      el.style.strokeDashoffset = offStr;
+    }
+  }
+}
+
+function updateLlmContextMeter() {
+  const st = getOllamaConversationContextStats();
+  const baseTip =
+    'Ring = estimated copresenter history vs prune/summarize budget (chars÷3.5). When it fills, older turns compress — replies may feel different.';
+
+  const applyLevel = (level) => {
+    if (llmContextWrapEl) {
+      if (level) llmContextWrapEl.dataset.level = level;
+      else delete llmContextWrapEl.dataset.level;
+    }
+    if (stageLlmContextRingEl) {
+      if (level) stageLlmContextRingEl.dataset.level = level;
+      else stageLlmContextRingEl.removeAttribute('data-level');
+    }
+  };
+
+  if (st.messages === 0) {
+    lastCopresenterOllamaUsage = null;
+    if (llmContextMeterEl) llmContextMeterEl.textContent = '0% · idle';
+    applyLevel('');
+    setLlmContextRingFill(0);
+    if (llmContextWrapEl) llmContextWrapEl.title = `${baseTip} No messages yet (0%).`;
+    if (stageLlmContextRingEl) stageLlmContextRingEl.title = `${baseTip} No messages yet.`;
+    return;
+  }
+
+  const ollama = lastCopresenterOllamaUsage;
+  const ollamaBit =
+    ollama && (ollama.promptEvalCount > 0 || ollama.evalCount > 0)
+      ? ` · ↑${formatCtxTokShort(ollama.promptEvalCount)}↓${formatCtxTokShort(ollama.evalCount)}`
+      : ollama && ollama.apiCalls > 0
+        ? ' · Ollama (no tok)'
+        : '';
+  const level = st.pct >= 92 ? 'high' : st.pct >= 72 ? 'mid' : 'low';
+  applyLevel(level);
+  const fillPct = Math.min(100, (st.tokensEst / Math.max(1, st.budget)) * 100);
+  setLlmContextRingFill(fillPct);
+
+  if (llmContextMeterEl) {
+    llmContextMeterEl.textContent = `${st.pct}% · ~${formatCtxTokShort(st.tokensEst)}/${formatCtxTokShort(st.budget)} · ${st.messages} msgs${ollamaBit}`;
+  }
+
+  const detailTip = `${baseTip} Now ~${st.tokensEst}/${st.budget} est. tok, ${st.messages} msgs (${st.pct}% of budget).`;
+  if (llmContextWrapEl) llmContextWrapEl.title = detailTip;
+  if (stageLlmContextRingEl) stageLlmContextRingEl.title = detailTip;
+}
+
+function findSummaryTailStart(nonSys, minKeep) {
+  if (nonSys.length <= minKeep) return 0;
+  let start = nonSys.length - minKeep;
+  while (start > 0 && nonSys[start].role !== 'user') start -= 1;
+  return start;
+}
+
+/**
+ * User turns may append `[slide n/m: …]\\nBackground: …` (deck grounding). That is not spoken dialogue
+ * and must not be sent to the context summarizer (only real back-and-forth should be compressed).
+ */
+function userContentForSummaryTranscript(content) {
+  const s = typeof content === 'string' ? content : String(content ?? '');
+  const re = /\n\n\[slide [^\]]+\]\nBackground:\s*/;
+  const hit = re.exec(s);
+  if (!hit) return s.trim();
+  return s.slice(0, hit.index).trim();
+}
+
+function formatMsgForSummaryTranscript(m) {
+  if (m.role === 'user') {
+    const d = userContentForSummaryTranscript(m.content);
+    return `Algimantas: ${d.length ? d : '(turn was slide grounding only)'}`;
+  }
+  if (m.role === 'assistant') {
+    const names =
+      Array.isArray(m.tool_calls) && m.tool_calls.length
+        ? ` [tools: ${m.tool_calls
+            .map((t) => t?.function?.name)
+            .filter(Boolean)
+            .join(', ')}]`
+        : '';
+    return `Kiki:${names} ${m.content}`;
+  }
+  if (m.role === 'tool') {
+    const c = String(m.content || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return `Tool (${m.tool_name}): ${c.slice(0, 420)}${c.length > 420 ? '…' : ''}`;
+  }
+  return `${m.role}: ${String(m.content ?? '')}`;
+}
+
+/**
+ * When estimated history exceeds the budget, compress the oldest turns via a tool-free chat call,
+ * then keep recent messages verbatim. Falls back to prune-only if summarization fails.
+ * Only user/assistant dialogue is summarized: the copresenter system prompt is never in the transcript,
+ * and slide/deck grounding appended to user messages is stripped for summarization.
+ */
+async function maybeSummarizeOllamaHistory(k) {
+  const msgs = ollamaConversation.messages;
+  if (!k?.chat || msgs.length < 3) return;
+
+  const sys = msgs[0];
+  if (sys?.role !== 'system') return;
+
+  const nonSys = msgs.slice(1).filter((m) => m && m.role !== 'system');
+  if (nonSys.length <= OLLAMA_SUMMARY_TAIL_MIN) return;
+
+  const stats = getOllamaConversationContextStats();
+  if (stats.tokensEst <= OLLAMA_HISTORY_TOKEN_BUDGET) return;
+
+  const tailStart = findSummaryTailStart(nonSys, OLLAMA_SUMMARY_TAIL_MIN);
+  const head = nonSys.slice(0, tailStart);
+  const tail = nonSys.slice(tailStart);
+  if (head.length === 0) return;
+
+  let headTokens = 0;
+  for (let i = 0; i < head.length; i += 1) headTokens += Math.ceil(messageRoughChars(head[i]) / 3.5);
+  if (headTokens < OLLAMA_SUMMARY_MIN_HEAD_TOKENS) return;
+
+  const SUMMARY_SYS =
+    'You compress a live copresenter transcript (Algimantas human + Kiki AI on stage). Output plain text, at most 12 short lines. Preserve: questions asked, key answers, slide or demo mentions, jokes, unresolved threads. No markdown headings. No role-play. English.';
+
+  const transcript = head.map(formatMsgForSummaryTranscript).join('\n\n');
+
+  try {
+    pushAssistantDebug('context_summarize_start', {
+      headMessages: head.length,
+      headTokensEst: headTokens,
+    });
+    const summary = await k.chat({
+      messages: [
+        { role: 'system', content: SUMMARY_SYS },
+        { role: 'user', content: `Transcript to compress:\n\n${transcript}` },
+      ],
+      think: false,
+      maxTokens: OLLAMA_SUMMARY_MAX_TOKENS,
+    });
+    const trimmed = (summary || '').trim();
+    if (trimmed.length < 24) throw new Error('summary too short');
+
+    const memoryBlock =
+      '[Earlier conversation — memory for Kiki only; do not read aloud unless asked]\n' + trimmed;
+
+    ollamaConversation.messages = [sys, { role: 'user', content: memoryBlock }, ...tail];
+    pushAssistantDebug('context_summarize_done', {
+      summaryChars: trimmed.length,
+      tailMessages: tail.length,
+    });
+  } catch (e) {
+    pushAssistantDebug('context_summarize_error', { message: e?.message || String(e) });
+  }
 }
 
 function formatSlideBlockForLlm(slide, i, n) {
@@ -2289,31 +2628,117 @@ nextSlideBtn?.addEventListener('click', () => {
   }
 });
 
-async function autoConnectOllama() {
-  updateStatus('Connecting…');
+/** True when the Ollama base URL points at this machine (model load + first token are slow; we prewarm on connect). */
+function isLikelyLocalOllamaUrl(url) {
   try {
-    // Not TS in the browser: Vite builds src/slides-ollama-assistant.ts → this file (npm run build:slides-ollama).
-    await import('./slides-ollama.js');
-    const k = window.kittenSlidesOllama;
-    if (!k?.connect) throw new Error('slides-ollama.js did not register window.kittenSlidesOllama');
-    await k.connect(
-      ollamaUrlEl?.value || 'http://localhost:11434',
-      ollamaModelSelectEl?.value || 'ministral-3:8b-cloud',
-      (msg) => updateStatus(msg),
-    );
-    installOllamaAdapter();
-    llmChipEl.textContent = 'ollama';
-    updateStatus(`Ready — ${k.getModel()}`, 'success');
-  } catch (e) {
-    llmChipEl.textContent = 'error';
-    updateStatus(`Ollama: ${e?.message || e}`, 'warning');
+    const h = new URL(url).hostname.toLowerCase();
+    return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '::1';
+  } catch {
+    return false;
   }
 }
-autoConnectOllama();
+
+/** One cheap chat to load weights into RAM; only used for local Ollama (cloud is already warm). */
+async function prewarmLocalOllamaModel() {
+  const k = window.kittenSlidesOllama;
+  if (!k?.isConnected?.() || !k.chat) return;
+  try {
+    updateStatus('Warming up local model…');
+    await k.chat({
+      messages: [{ role: 'user', content: 'hi' }],
+      maxTokens: 4,
+      think: false,
+    });
+  } catch {
+    // first real turn will show errors; connect + tags already succeeded
+  }
+}
+
+/**
+ * Serialized Ollama connect/rebind. Parallel `connect()` calls share one module-level `model` and
+ * would clobber each other (e.g. initial auto-connect + LLM dropdown), leaving the wrong name in the pill.
+ */
+let ollamaConnectChain = Promise.resolve();
+
+/** Shared path: `/api/tags` + bind model + reinstall adapter; `onStatus` drives the status pill during reload. */
+async function runOllamaConnectFlowInternal(
+  initialStatusMsg = 'Connecting…',
+  forcedModelId?: string,
+) {
+  updateStatus(initialStatusMsg);
+  // Not TS in the browser: Vite builds src/slides-ollama-assistant.ts → slides-ollama.js.
+  await import(/* @vite-ignore */ './slides-ollama.js');
+  const k = window.kittenSlidesOllama;
+  if (!k?.connect) throw new Error('slides-ollama.js did not register window.kittenSlidesOllama');
+  const baseUrl = ollamaUrlEl?.value || 'http://localhost:11434';
+  const trimmed = typeof forcedModelId === 'string' ? forcedModelId.trim() : '';
+  const modelId = trimmed.length > 0 ? trimmed : getOllamaModelIdFromDom();
+  await k.connect(baseUrl, modelId, (msg) => updateStatus(msg));
+  k.setModel(modelId);
+  installOllamaAdapter();
+  updateLlmContextMeter();
+  if (llmChipEl) llmChipEl.textContent = 'ollama';
+  if (isLikelyLocalOllamaUrl(baseUrl)) {
+    await prewarmLocalOllamaModel();
+  }
+  updateStatus(`Ready — ${modelId}`, 'success');
+}
+
+/**
+ * Enqueue connect so only one flow mutates `window.kittenSlidesOllama` at a time.
+ * Resolves when *this* enqueued run finishes (not the whole backlog after later enqueue).
+ */
+function queueOllamaConnectFlow(initialStatusMsg?: string, forcedModelId?: string): Promise<void> {
+  let finish!: () => void;
+  const thisRun = new Promise<void>((r) => {
+    finish = r;
+  });
+  const job = async () => {
+    try {
+      await runOllamaConnectFlowInternal(initialStatusMsg, forcedModelId);
+    } catch (e) {
+      if (llmChipEl) llmChipEl.textContent = 'error';
+      updateStatus(`Ollama: ${(e as Error)?.message || e}`, 'warning');
+    } finally {
+      finish();
+    }
+  };
+  ollamaConnectChain = ollamaConnectChain.then(job, job);
+  return thisRun;
+}
+
+function autoConnectOllama() {
+  void queueOllamaConnectFlow('Connecting…');
+}
+function startSlidesLabOllamaWhenDomReady() {
+  const run = () => void autoConnectOllama();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run, { once: true });
+  } else {
+    run();
+  }
+}
+startSlidesLabOllamaWhenDomReady();
+
+document.getElementById('ollama-model-select')?.addEventListener('change', async () => {
+  updateLabAutoSummary();
+  const sel = document.getElementById('ollama-model-select');
+  if (!sel || !String(sel.value || '').trim()) return;
+  const mid = String(sel.value).trim();
+  sel.disabled = true;
+  if (llmChipEl) llmChipEl.textContent = '…';
+  try {
+    await queueOllamaConnectFlow(`Reloading model: ${mid}…`, mid);
+  } finally {
+    sel.disabled = false;
+  }
+});
 
 async function warmupLlm() {
   const k = window.kittenSlidesOllama;
   if (!k?.isConnected?.() || !k.chat) return;
+  const baseUrl = ollamaUrlEl?.value || 'http://localhost:11434';
+  if (isLikelyLocalOllamaUrl(baseUrl)) return;
   try {
     updateStatus('Warming up LLM…');
     await k.chat({
@@ -2321,7 +2746,7 @@ async function warmupLlm() {
       maxTokens: 4,
       think: false,
     });
-    updateStatus(`Ready — ${k.getModel()}`, 'success');
+    updateStatus(`Ready — ${getOllamaModelIdFromDom()}`, 'success');
   } catch {
     // non-fatal — the real request will surface errors
   }
@@ -2729,4 +3154,5 @@ if (typeof requestIdleCallback === 'function') {
   setTimeout(() => prewarmSlideDiagramEngine(), 1);
 }
 
+updateLlmContextMeter();
 window.__kittenSlidesLabReady = true;

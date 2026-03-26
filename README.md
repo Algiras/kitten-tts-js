@@ -145,6 +145,17 @@ This serves [`docs/index.html`](./docs/index.html), where you can type text, pic
 
 The repo also includes [`docs/slides.html`](./docs/slides.html), a slides-plus-assistant lab that pairs a presentation stage with a walkie-talkie copresenter. It uses KittenTTS for speech output, browser STT for input, and **[Ollama](https://ollama.com/)** on localhost as the LLM backend. Press **Space** to talk, **Space** again to interrupt, **Esc** to exit. Requires `ollama serve` with `OLLAMA_ORIGINS=*`.
 
+Build the static assets, then serve `docs/` (port **3000**, with `/slides` → `slides.html` from [`docs/serve.json`](./docs/serve.json)):
+
+```bash
+npm run build:pages
+npm run serve:docs
+```
+
+Open `http://localhost:3000/slides` or `http://localhost:3000/slides.html`. One-shot rebuild + serve: `npm run dev`.
+
+If `npm install` fails (for example behind a restrictive registry), run `npm run install:retry` (retries against [npmmirror](https://npmmirror.com/)) or `npm run install:mirror`.
+
 ### Browser (Web Worker — recommended for production)
 
 Running inference in a Worker keeps the UI thread responsive during the ~5–10 s model load and synthesis.

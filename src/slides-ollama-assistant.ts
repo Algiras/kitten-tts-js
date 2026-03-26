@@ -1,8 +1,9 @@
 /**
  * Ollama localhost LLM adapter.
  * Uses the native /api/chat endpoint (not OpenAI-compat).
- * `think` is only sent when explicitly `true`; omitted otherwise for broad
- * model compatibility (non-thinking models may reject the parameter).
+ * Every request sets top-level `think: false` unless callers pass `think: true`, so
+ * reasoning-capable models (e.g. Qwen 3.5) do not spend tokens in hidden thinking.
+ * Ollama chat API documents `think` as a boolean on the request body.
  * Streaming is NDJSON (one JSON object per line).
  *
  * Slide actions use only Ollama's native `tools` + streamed `message.tool_calls`
@@ -61,7 +62,7 @@ export type OllamaChatOpts = {
   messages: ChatMsg[];
   temperature?: number;
   maxTokens?: number;
-  /** Allow the model to "think" before answering (default false for speed). */
+  /** When true, send `think: true` to Ollama; default false disables hidden reasoning. */
   think?: boolean;
   /** Stream token-by-token and flush sentences to this callback. */
   onSentence?: (sentence: string) => Promise<void>;
@@ -71,8 +72,38 @@ export type OllamaChatOpts = {
   isStale?: () => boolean;
 };
 
+/**
+ * Populated from Ollama `/api/chat` JSON (and streaming `done` lines): real tokenizer counts when present.
+ * @see https://github.com/ollama/ollama/blob/main/docs/api.md — `prompt_eval_count`, `eval_count`
+ */
+export type OllamaChatUsageSnapshot = {
+  promptEvalCount: number;
+  evalCount: number;
+  /** One per HTTP `/api/chat` (tool follow-ups are multiple calls). */
+  apiCalls: number;
+};
+
+let lastChatUsage: OllamaChatUsageSnapshot | null = null;
+
+function resetChatUsageForRequest(): void {
+  lastChatUsage = { promptEvalCount: 0, evalCount: 0, apiCalls: 0 };
+}
+
+function mergeOllamaUsageFromJson(json: Record<string, unknown> | null | undefined): void {
+  if (!lastChatUsage || !json) return;
+  const pe = json.prompt_eval_count;
+  const ec = json.eval_count;
+  if (typeof pe === 'number' && pe >= 0) lastChatUsage.promptEvalCount += pe;
+  if (typeof ec === 'number' && ec >= 0) lastChatUsage.evalCount += ec;
+}
+
+/** Latest completed `chat()` totals (sums tool rounds). May omit counts when Ollama omits fields (e.g. cache). */
+export function getLastChatUsage(): OllamaChatUsageSnapshot | null {
+  return lastChatUsage ? { ...lastChatUsage } : null;
+}
+
 let baseUrl = 'http://localhost:11434';
-let model = 'qwen3.5:0.8b';
+let model = 'qwen3.5:2b';
 let connected = false;
 
 /** Extra headers for every Ollama HTTP call (e.g. `Authorization: Bearer …` for https://ollama.com). */
@@ -413,10 +444,11 @@ export async function connect(
   if (!res.ok) throw new Error(`Ollama returned ${res.status} from /api/tags`);
   const json = (await res.json()) as { models?: { name: string }[] };
   const models = (json.models ?? []).map((m) => m.name).sort();
-  if (models.length === 0) throw new Error('Ollama has no models. Run: ollama pull qwen3.5:0.8b');
+  if (models.length === 0) throw new Error('Ollama has no models. Run: ollama pull qwen3.5:2b');
 
-  if (requestedModel) {
-    model = requestedModel;
+  const want = typeof requestedModel === 'string' ? requestedModel.trim() : '';
+  if (want) {
+    model = want;
   } else if (!models.some((m) => m === model || m.startsWith(model + ':'))) {
     model = models[0];
   }
@@ -439,6 +471,7 @@ export function setModel(m: string): void {
  * With `onToolCall`, uses streaming, sends `tools`, and runs native `tool_calls`.
  */
 export async function chat(opts: OllamaChatOpts): Promise<string> {
+  resetChatUsageForRequest();
   const { messages, onSentence, onToolCall } = opts;
   const streaming = typeof onSentence === 'function';
 
@@ -485,7 +518,7 @@ async function readStreamWithSlideTools(
       options: { temperature, num_predict: maxTokens },
       tools: [...OLLAMA_SLIDE_TOOLS],
     };
-    if (think) body.think = true;
+    body.think = think;
 
     const res = await fetch(`${baseUrl}/api/chat`, ollamaFetchInit(body));
     if (!res.ok) {
@@ -493,12 +526,15 @@ async function readStreamWithSlideTools(
       throw new Error(`Ollama ${res.status}: ${text.slice(0, 200)}`);
     }
 
+    if (lastChatUsage) lastChatUsage.apiCalls += 1;
+
     let raw = '';
     let emittedUpTo = 0;
 
     if (!res.body) {
       if (isStale?.()) return '';
-      const json = (await res.json()) as { message?: OllamaStreamMessage };
+      const json = (await res.json()) as { message?: OllamaStreamMessage } & Record<string, unknown>;
+      mergeOllamaUsageFromJson(json);
       raw = String(json?.message?.content ?? '');
       const deltas = extractToolCallDeltasFromStreamChunk(json);
       if (deltas.length && onToolCall) {
@@ -535,10 +571,15 @@ async function readStreamWithSlideTools(
           for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed) continue;
-            let parsed: { message?: OllamaStreamMessage; done?: boolean };
+            let parsed: { message?: OllamaStreamMessage; done?: boolean } & Record<string, unknown>;
             try {
               parsed = JSON.parse(trimmed);
             } catch {
+              continue;
+            }
+
+            if (parsed.done === true) {
+              mergeOllamaUsageFromJson(parsed);
               continue;
             }
 
@@ -554,8 +595,6 @@ async function readStreamWithSlideTools(
                 isStale,
               );
             }
-
-            if (parsed.done) continue;
 
             const msg = parsed.message;
             const delta = msg?.content ?? '';
@@ -654,9 +693,16 @@ async function readStream(
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
-        let parsed: { message?: { content?: string }; done?: boolean };
-        try { parsed = JSON.parse(trimmed); } catch { continue; }
-        if (parsed.done) continue;
+        let parsed: { message?: { content?: string }; done?: boolean } & Record<string, unknown>;
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch {
+          continue;
+        }
+        if (parsed.done === true) {
+          mergeOllamaUsageFromJson(parsed);
+          continue;
+        }
         const delta = parsed.message?.content ?? '';
         if (!delta) continue;
 
@@ -697,7 +743,7 @@ async function doStreamOrPlain(messages: ChatMsg[], opts: OllamaChatOpts): Promi
     stream: streaming,
     options: { temperature, num_predict: maxTokens },
   };
-  if (think) body.think = true;
+  body.think = think;
 
   const res = await fetch(`${baseUrl}/api/chat`, ollamaFetchInit(body));
   if (!res.ok) {
@@ -705,13 +751,16 @@ async function doStreamOrPlain(messages: ChatMsg[], opts: OllamaChatOpts): Promi
     throw new Error(`Ollama ${res.status}: ${text.slice(0, 200)}`);
   }
 
+  if (lastChatUsage) lastChatUsage.apiCalls += 1;
+
   if (!streaming) {
     if (isStale?.()) return '';
-    const json = await res.json();
-    return stripForSpeech(json?.message?.content ?? '').trim();
+    const json = (await res.json()) as Record<string, unknown>;
+    mergeOllamaUsageFromJson(json);
+    return stripForSpeech((json.message as { content?: string } | undefined)?.content ?? '').trim();
   }
 
-  return readStream(res, onSentence, isStale);
+  return readStream(res, onSentence!, isStale);
 }
 
 declare global {
@@ -725,6 +774,7 @@ declare global {
       isConnected: typeof isConnected;
       chat: typeof chat;
       setOllamaRequestHeaders: typeof setOllamaRequestHeaders;
+      getLastChatUsage: typeof getLastChatUsage;
     };
   }
 }
@@ -738,6 +788,7 @@ const kittenSlidesOllamaApi = {
   isConnected,
   chat,
   setOllamaRequestHeaders,
+  getLastChatUsage,
 };
 
 if (typeof window !== 'undefined') {

@@ -1,6 +1,8 @@
 /**
  * Hits Ollama Cloud (or OLLAMA_API_BASE_URL) with the same TS adapter as slides-ollama.js.
  * Put `OLLAMA_API_KEY=...` in repo-root `.env`, then: npm run test:integration
+ *
+ * Local Qwen + tool calling (opt-in): see `ollama-local-qwen-tools.itest.ts` and `OLLAMA_LOCAL_ITEST=1`.
  */
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';

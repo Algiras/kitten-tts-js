@@ -269,14 +269,26 @@ export class BrowserKittenTTS {
     const inputIdsTensor = new ort.Tensor('int64', BigInt64Array.from(input_ids.map(BigInt)), [1, seqLen]);
     const styleTensor = new ort.Tensor('float32', new Float32Array(style), [1, styleDim]);
     const speedTensor = new ort.Tensor('float32', new Float32Array([speed]), [1]);
-    const results = await this._session.run({
-      input_ids: inputIdsTensor,
-      style: styleTensor,
-      speed: speedTensor,
-    });
+    let results: Record<string, ort.Tensor>;
+    try {
+      results = await this._session.run({
+        input_ids: inputIdsTensor,
+        style: styleTensor,
+        speed: speedTensor,
+      });
+    } finally {
+      inputIdsTensor.dispose();
+      styleTensor.dispose();
+      speedTensor.dispose();
+    }
     const outputKey = Object.keys(results)[0];
-    const audioData = results[outputKey].data as Float32Array;
+    const outTensor = results[outputKey];
+    const audioData = outTensor.data as Float32Array;
     const trimmed = audioData.slice(0, Math.max(0, audioData.length - AUDIO_TRIM));
-    return new Float32Array(trimmed);
+    const copy = new Float32Array(trimmed);
+    for (const k of Object.keys(results)) {
+      results[k].dispose();
+    }
+    return copy;
   }
 }
