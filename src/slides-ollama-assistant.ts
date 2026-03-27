@@ -127,7 +127,7 @@ function ollamaFetchInit(body: unknown): RequestInit {
 /**
  * Ollama /api/chat `tools` list for Kiki (copresenter).
  * Intentionally narrow: highlight, bullets, slide changes, fireworks only.
- * Other stage actions (voice, overlay, diagram jumps) are presenter UI / shortcuts only — see `executeToolCall` in slides-lab-main.
+ * Other stage actions (voice, overlay, diagram jumps) were previously wired from the slides lab; the shipped `slides.html` is TTS-only.
  */
 export const OLLAMA_SLIDE_TOOLS: readonly unknown[] = [
   {
@@ -697,22 +697,6 @@ async function doStreamOrPlain(messages: ChatMsg[], opts: OllamaChatOpts): Promi
   }
 
   return readStream(res, onSentence!, isStale);
-}
-
-declare global {
-  interface Window {
-    kittenSlidesOllama?: {
-      connect: typeof connect;
-      disconnect: typeof disconnect;
-      setModel: typeof setModel;
-      getModel: typeof getModel;
-      getBaseUrl: typeof getBaseUrl;
-      isConnected: typeof isConnected;
-      chat: typeof chat;
-      setOllamaRequestHeaders: typeof setOllamaRequestHeaders;
-      getLastChatUsage: typeof getLastChatUsage;
-    };
-  }
 }
 
 const kittenSlidesOllamaApi = {

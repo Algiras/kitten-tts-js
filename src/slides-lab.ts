@@ -1,5 +1,5 @@
 /**
- * Slides lab entry — built to `docs/slides-lab.js` for `docs/slides.html`.
+ * Slides presenter — built to `docs/slides-lab.js` for `docs/slides.html`.
  * @see vite.config.slides-lab.ts
  */
-import './slides-lab-main.js';
+import './slides-presenter-main.js';

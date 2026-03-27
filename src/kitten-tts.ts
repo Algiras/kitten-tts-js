@@ -16,7 +16,8 @@ import { RawAudio } from './audio.ts';
 
 const SAMPLE_RATE = 24000;
 const AUDIO_TRIM = 5000;
-const MAX_CHUNK_CHARS = 400;
+const MAX_CHUNK_CHARS = 250;
+const MAX_INPUT_IDS = 510;
 
 const DEFAULT_VOICE_ALIASES: Record<string, string> = {
   Bella: 'expr-voice-2-f',
@@ -47,6 +48,7 @@ interface OrtLike {
   };
   Tensor: new (type: string, data: BigInt64Array | Float32Array, dims: readonly number[]) => OrtTensor;
   env: {
+    logLevel?: string;
     wasm: {
       wasmPaths?: string;
       numThreads: number;
@@ -106,7 +108,6 @@ function resolveWebExecutionProviders(runtime = 'auto', opts: FromPretrainedOpti
     return opts.browserExecutionProviders;
   }
   if (runtime === 'gpu') return ['webgpu'];
-  if (runtime === 'cpu' || runtime === 'wasm' || runtime === 'auto') return ['wasm'];
   return ['wasm'];
 }
 
@@ -126,27 +127,23 @@ async function createWebSession(
     };
   }
 
-  if (runtime === 'gpu') {
-    try {
-      const executionProviders = ['webgpu'];
-      const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
-      return { session, runtimeActual: 'gpu', executionProviders };
-    } catch {
-      const executionProviders = ['wasm'];
-      const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
-      return { session, runtimeActual: 'cpu', executionProviders };
-    }
-  }
-
-  if (runtime === 'cpu' || runtime === 'wasm') {
+  // `auto` uses WASM only (WebGPU session create can succeed then fail at BERT Expand on OrtRun).
+  if (runtime === 'cpu' || runtime === 'wasm' || runtime === 'auto') {
     const executionProviders = ['wasm'];
     const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
     return { session, runtimeActual: 'cpu', executionProviders };
   }
 
-  const executionProviders = ['wasm'];
-  const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
-  return { session, runtimeActual: 'cpu', executionProviders };
+  // `gpu` only: WebGPU first, then WASM (CPU).
+  try {
+    const executionProviders = ['webgpu'];
+    const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
+    return { session, runtimeActual: 'gpu', executionProviders };
+  } catch {
+    const executionProviders = ['wasm'];
+    const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
+    return { session, runtimeActual: 'cpu', executionProviders };
+  }
 }
 
 export class KittenTTS {
@@ -212,6 +209,7 @@ export class KittenTTS {
       }
       ort.env.wasm.numThreads = resolveWebWasmThreads(opts);
       ort.env.wasm.simd = opts.wasmSimd !== false;
+      ort.env.logLevel = 'error';
     }
 
     const runtime = opts.runtime || 'auto';
@@ -285,11 +283,11 @@ export class KittenTTS {
   }
 
   _chunkText(text: string): string[] {
-    const sentences = text.split(/[.!?]+/);
+    const segments = text.split(/(?<=[.!?;])\s+|\n+/);
     const chunks: string[] = [];
 
-    for (const s of sentences) {
-      const sentence = s.trim();
+    for (const seg of segments) {
+      const sentence = seg.trim();
       if (!sentence) continue;
 
       if (sentence.length <= MAX_CHUNK_CHARS) {
@@ -320,7 +318,10 @@ export class KittenTTS {
     const processedText = clean ? this._preprocessor.process(chunk) : chunk;
     let phonemes = await phonemize(processedText);
     phonemes = basic_english_tokenize(phonemes).join(' ');
-    const tokenIds = this._cleaner.clean(phonemes);
+    let tokenIds = this._cleaner.clean(phonemes);
+    if (tokenIds.length > MAX_INPUT_IDS) {
+      tokenIds = [...tokenIds.slice(0, MAX_INPUT_IDS - 2), 10, 0];
+    }
 
     if (this.voiceAliases[voiceName]) {
       voiceName = this.voiceAliases[voiceName];

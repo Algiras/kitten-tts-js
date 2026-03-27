@@ -4,6 +4,7 @@ node_modules/
 
 .env
 .venv/
+.venv-tts-eval/
 .venv-bench/
 .python-bench/
 .benchmarks/
@@ -18,6 +19,7 @@ artifacts/tts-eval/
 dist/
 docs/bundle.js
 docs/slides-ollama.js
+docs/slides-web-llm.js
 docs/slides-lab.js
 docs/*.wasm
 docs/*.mjs

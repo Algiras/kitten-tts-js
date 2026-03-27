@@ -1,5 +1,5 @@
 /**
- * Ambient types for the slides lab bundle (Mermaid CDN, legacy webkit STT).
+ * Ambient types for the slides presenter bundle (Mermaid CDN).
  */
 export {};
 
@@ -13,9 +13,31 @@ type MermaidGlobal = {
 
 declare global {
   interface Window {
-    SpeechRecognition?: new () => SpeechRecognition;
-    webkitSpeechRecognition?: new () => SpeechRecognition;
     __kittenSlidesLabReady?: boolean;
+    /** Optional; used by `slides-web-llm-assistant.ts` when built standalone. */
+    kittenSlidesWebLlm?: {
+      connect: (baseUrl: string, modelId?: string, onStatus?: (msg: string) => void) => Promise<{ models: string[] }>;
+      disconnect: () => void;
+      isConnected: () => boolean;
+      getModel: () => string;
+      getBaseUrl: () => string;
+      setModel: (m: string) => void;
+      chat: (opts: Record<string, unknown>) => Promise<string>;
+      getLastChatUsage: () => unknown;
+    };
+    /** Optional; used by `slides-ollama-assistant.ts`. */
+    kittenSlidesOllama?: {
+      connect: (url?: string, modelId?: string, onStatus?: (msg: string) => void) => Promise<{ models: string[] }>;
+      disconnect: () => void;
+      isConnected: () => boolean;
+      getModel: () => string;
+      getBaseUrl: () => string;
+      setModel: (m: string) => void;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      chat: (opts: any) => Promise<string>;
+      getLastChatUsage: () => unknown;
+      setOllamaRequestHeaders: (h: Record<string, string> | null | undefined) => void;
+    };
   }
 
   var mermaid: MermaidGlobal | undefined;

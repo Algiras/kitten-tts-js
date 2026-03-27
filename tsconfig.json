@@ -17,5 +17,5 @@
     "noEmit": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "test", "scripts", "src/slides-lab-main.ts"]
+  "exclude": ["node_modules", "dist", "test", "scripts"]
 }

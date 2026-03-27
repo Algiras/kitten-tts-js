@@ -1,6 +1,6 @@
 /**
  * Narrator interrupt + turn policy for the slides lab (barge-in / turn-taking).
- * Used by `slides-lab-main.ts` and unit tests.
+ * Used by narrator-state unit tests (historically also the slides lab).
  */
 
 const DEFAULT_FILLER = new Set(['um', 'uh', 'erm', 'er', 'mm', 'hmm', 'uhh', 'umm']);

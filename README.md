@@ -143,7 +143,7 @@ If port `4173` is already occupied, the command now exits with an explicit error
 
 This serves [`docs/index.html`](./docs/index.html), where you can type text, pick voice/model, and generate speech directly in the browser.
 
-The repo also includes [`docs/slides.html`](./docs/slides.html), a slides-plus-assistant lab that pairs a presentation stage with a walkie-talkie copresenter. It uses KittenTTS for speech output, browser STT for input, and **[Ollama](https://ollama.com/)** on localhost as the LLM backend. Press **Space** to talk, **Space** again to interrupt, **Esc** to exit. Requires `ollama serve` with `OLLAMA_ORIGINS=*`.
+The repo also includes [`docs/slides.html`](./docs/slides.html), a slides-plus-assistant lab that pairs a presentation stage with a walkie-talkie copresenter. It uses **KittenTTS** for speech output and **browser STT** for input. Under **Options → Copresenter** you can choose **Ollama (local)** — faster, small models like `qwen3.5:2b` or `llama3.2:1b` via [`slides-ollama.js`](./src/slides-ollama-assistant.ts) — or **Browser (HF)** — [Transformers.js](https://huggingface.co/docs/transformers.js) + quantized ONNX from Hugging Face (`slides-web-llm.js`, jsDelivr), no server. On `localhost`, the default backend is **Ollama**; elsewhere it defaults to **browser** (override with `?llm=ollama` or saved choice). Ollama enables native slide **tools** (highlights, `go_to_slide`, etc.). Press **Space** to talk, **Space** again to interrupt, **Esc** to exit.
 
 Build the static assets, then serve `docs/` (port **3000**, with `/slides` → `slides.html` from [`docs/serve.json`](./docs/serve.json)):
 

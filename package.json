@@ -20,10 +20,12 @@
   "scripts": {
     "build": "vite build",
     "build:slides-ollama": "vite build --config vite.config.slides-ollama.ts",
+    "build:slides-web-llm": "vite build --config vite.config.slides-web-llm.ts",
     "build:slides-lab": "vite build --config vite.config.slides-lab.ts",
     "watch:slides-ollama": "vite build --config vite.config.slides-ollama.ts --watch",
+    "watch:slides-web-llm": "vite build --config vite.config.slides-web-llm.ts --watch",
     "watch:slides-lab": "vite build --config vite.config.slides-lab.ts --watch",
-    "build:pages": "vite build --config vite.config.pages.ts && npm run build:slides-lab && npm run build:slides-ollama && cp node_modules/onnxruntime-web/dist/ort-wasm* docs/",
+    "build:pages": "vite build --config vite.config.pages.ts && npm run build:slides-lab && npm run build:slides-web-llm && npm run build:slides-ollama && cp node_modules/onnxruntime-web/dist/ort-wasm* docs/",
     "serve:docs": "serve docs -l tcp://0.0.0.0:3000",
     "dev": "npm run build:pages && npm run serve:docs",
     "watch:pages": "vite build --config vite.config.pages.ts --watch",

@@ -12,7 +12,7 @@ export type StreamToolCall = {
 
 /**
  * Mermaid preset keys for `diagram_${key}` tools (each jumps to the deck slide that embeds that diagram).
- * Must match `Object.keys(DIAGRAM_PRESETS)` in `src/slides-lab-main.ts`.
+ * Must match `Object.keys(DIAGRAM_PRESETS)` in `src/slides-deck-data.ts`.
  */
 export const SLIDE_DIAGRAM_PRESET_KEYS = ['reinforcement_loop'] as const;
 

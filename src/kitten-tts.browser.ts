@@ -8,7 +8,8 @@ import * as ort from 'onnxruntime-web';
 
 const SAMPLE_RATE = 24000;
 const AUDIO_TRIM = 5000;
-const MAX_CHUNK_CHARS = 400;
+const MAX_CHUNK_CHARS = 250;
+const MAX_INPUT_IDS = 510;
 
 const DEFAULT_VOICE_ALIASES: Record<string, string> = {
   Bella: 'expr-voice-2-f',
@@ -58,6 +59,28 @@ function isCoarseMobileUa(): boolean {
   );
 }
 
+function executionProvidersUseWebGpu(
+  eps: readonly (string | { name?: string })[],
+): boolean {
+  return eps.some((p) => {
+    const n = typeof p === 'string' ? p : p?.name;
+    return String(n || '').toLowerCase() === 'webgpu';
+  });
+}
+
+function inferErrorText(e: unknown): string {
+  if (e instanceof Error) {
+    let m = e.message;
+    const c = (e as Error & { cause?: unknown }).cause;
+    if (c instanceof Error) m += ` ${c.message}`;
+    return m;
+  }
+  if (e && typeof e === 'object' && 'message' in e) {
+    return String((e as { message: unknown }).message);
+  }
+  return String(e);
+}
+
 function resolveBrowserWasmThreads(opts: BrowserFromPretrainedOptions = {}): number {
   if (Number.isInteger(opts.wasmThreads) && opts.wasmThreads! > 0) {
     return isCoarseMobileUa() ? 1 : opts.wasmThreads!;
@@ -73,40 +96,51 @@ function resolveBrowserWasmThreads(opts: BrowserFromPretrainedOptions = {}): num
   return 4;
 }
 
-function resolveBrowserExecutionProviders(runtime = 'auto', opts: BrowserFromPretrainedOptions = {}): string[] {
-  if (Array.isArray(opts.browserExecutionProviders) && opts.browserExecutionProviders.length > 0) {
-    return opts.browserExecutionProviders;
-  }
-  if (runtime === 'gpu') return ['webgpu'];
-  if (runtime === 'cpu' || runtime === 'wasm' || runtime === 'auto') return ['wasm'];
-  return ['wasm'];
-}
-
 async function createBrowserSession(
   modelBuffer: ArrayBuffer,
   runtimeRequested: string,
   opts: BrowserFromPretrainedOptions
 ): Promise<{ session: ort.InferenceSession; runtimeActual: 'cpu' | 'gpu'; executionProviders: string[]; fallbackError?: Error }> {
-  const executionProviders = resolveBrowserExecutionProviders(runtimeRequested, opts);
-  try {
+  if (Array.isArray(opts.browserExecutionProviders) && opts.browserExecutionProviders.length > 0) {
+    const executionProviders = opts.browserExecutionProviders;
     const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
     return {
       session,
-      runtimeActual: executionProviders.includes('webgpu') ? 'gpu' : 'cpu',
+      runtimeActual: executionProvidersUseWebGpu(executionProviders) ? 'gpu' : 'cpu',
+      executionProviders,
+    };
+  }
+
+  // `auto` uses WASM only: WebGPU often creates a session then fails at BERT `/bert/Expand` on OrtRun.
+  // Use runtime `gpu` to opt into WebGPU (with one-shot WASM session reload if inference fails).
+  if (runtimeRequested === 'cpu' || runtimeRequested === 'wasm' || runtimeRequested === 'auto') {
+    const executionProviders = ['wasm'];
+    const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
+    return {
+      session,
+      runtimeActual: 'cpu',
+      executionProviders,
+    };
+  }
+
+  // `gpu` only: WebGPU first, else WASM at session create.
+  try {
+    const executionProviders = ['webgpu'];
+    const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
+    return {
+      session,
+      runtimeActual: 'gpu',
       executionProviders,
     };
   } catch (error) {
-    if (runtimeRequested === 'auto') {
-      const fallbackProviders = ['wasm'];
-      const session = await ort.InferenceSession.create(modelBuffer, { executionProviders: fallbackProviders });
-      return {
-        session,
-        runtimeActual: 'cpu',
-        executionProviders: fallbackProviders,
-        fallbackError: error as Error,
-      };
-    }
-    throw error;
+    const executionProviders = ['wasm'];
+    const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
+    return {
+      session,
+      runtimeActual: 'cpu',
+      executionProviders,
+      fallbackError: error as Error,
+    };
   }
 }
 
@@ -116,32 +150,49 @@ export class BrowserKittenTTS {
   private _config: ModelConfig;
   private _fallbackError: Error | null;
   readonly _runtimeRequested: string;
-  readonly _runtime: string;
-  readonly _executionProviders: string[];
+  private _runtimeLabel: string;
+  private _providersArr: string[];
+  private readonly _reloadModelId: string;
+  private readonly _reloadOpts: BrowserFromPretrainedOptions;
+  /** After one WebGPU OrtRun failure, reload session on WASM once. */
+  private _wasmInferenceFallbackDone = false;
   private _cleaner: TextCleaner;
   private _preprocessor: TextPreprocessor;
 
   readonly runtimeRequested: string;
-  readonly runtime: string;
-  readonly executionProviders: string[];
   readonly sampleRate: number;
   readonly voiceAliases: Record<string, string>;
   readonly speedPriors: Record<string, number>;
   readonly availableVoices: string[];
 
-  constructor(session: ort.InferenceSession, voices: NpzResult, config: ModelConfig, meta: BrowserSessionMeta = {}) {
+  get runtime(): string {
+    return this._runtimeLabel;
+  }
+
+  get executionProviders(): readonly string[] {
+    return this._providersArr;
+  }
+
+  constructor(
+    session: ort.InferenceSession,
+    voices: NpzResult,
+    config: ModelConfig,
+    meta: BrowserSessionMeta = {},
+    reloadModelId = '',
+    reloadOpts: BrowserFromPretrainedOptions = {},
+  ) {
     this._session = session;
     this._voices = voices;
     this._config = config;
     this._runtimeRequested = meta.runtimeRequested || 'auto';
-    this._runtime = meta.runtimeActual || 'cpu';
-    this._executionProviders = meta.executionProviders || ['wasm'];
+    this._runtimeLabel = meta.runtimeActual || 'cpu';
+    this._providersArr = [...(meta.executionProviders || ['wasm'])];
     this._fallbackError = meta.fallbackError || null;
+    this._reloadModelId = reloadModelId;
+    this._reloadOpts = { ...reloadOpts };
     this._cleaner = new TextCleaner();
     this._preprocessor = new TextPreprocessor({ remove_punctuation: false });
     this.runtimeRequested = this._runtimeRequested;
-    this.runtime = this._runtime;
-    this.executionProviders = this._executionProviders;
     this.sampleRate = config.sample_rate || SAMPLE_RATE;
     this.voiceAliases = { ...DEFAULT_VOICE_ALIASES, ...(config.voice_aliases || {}) };
     this.speedPriors = config.speed_priors || {};
@@ -167,6 +218,8 @@ export class BrowserKittenTTS {
     }
     ort.env.wasm.numThreads = resolveBrowserWasmThreads(opts);
     ort.env.wasm.simd = opts.wasmSimd !== false;
+    // Hide benign WASM warnings (unknown CPU vendor in browser, shape ops on CPU) — not errors.
+    ort.env.logLevel = 'error';
 
     const runtimeRequested = opts.runtime || 'auto';
     const { session, runtimeActual, executionProviders, fallbackError } = await createBrowserSession(modelBuffer, runtimeRequested, opts);
@@ -176,12 +229,19 @@ export class BrowserKittenTTS {
       console.warn(`[kitten-tts] Requested browser runtime "${runtimeRequested}" failed; using WASM fallback.`, fallbackError?.message || fallbackError);
     }
 
-    return new BrowserKittenTTS(session, voices, config as ModelConfig, {
-      runtimeRequested,
-      runtimeActual,
-      executionProviders,
-      fallbackError,
-    });
+    return new BrowserKittenTTS(
+      session,
+      voices,
+      config as ModelConfig,
+      {
+        runtimeRequested,
+        runtimeActual,
+        executionProviders,
+        fallbackError,
+      },
+      modelId,
+      opts,
+    );
   }
 
   list_voices(): string[] {
@@ -232,10 +292,10 @@ export class BrowserKittenTTS {
   }
 
   private _chunkText(text: string): string[] {
-    const sentences = text.split(/[.!?]+/);
+    const segments = text.split(/(?<=[.!?;])\s+|\n+/);
     const chunks: string[] = [];
-    for (const s of sentences) {
-      const sentence = s.trim();
+    for (const seg of segments) {
+      const sentence = seg.trim();
       if (!sentence) continue;
       if (sentence.length <= MAX_CHUNK_CHARS) {
         chunks.push(this._ensurePunctuation(sentence));
@@ -260,7 +320,10 @@ export class BrowserKittenTTS {
     const processedText = clean ? this._preprocessor.process(chunk) : chunk;
     let phonemes = await phonemize(processedText);
     phonemes = basic_english_tokenize(phonemes).join(' ');
-    const tokenIds = this._cleaner.clean(phonemes);
+    let tokenIds = this._cleaner.clean(phonemes);
+    if (tokenIds.length > MAX_INPUT_IDS) {
+      tokenIds = [...tokenIds.slice(0, MAX_INPUT_IDS - 2), 10, 0];
+    }
     if (this.voiceAliases[voiceName]) voiceName = this.voiceAliases[voiceName];
     if (!this._voices[voiceName]) {
       throw new Error(`Voice '${voiceName}' not found. Available: ${this.availableVoices.join(', ')}`);
@@ -274,31 +337,75 @@ export class BrowserKittenTTS {
     return { input_ids: tokenIds, style, styleDim, speed };
   }
 
+  /**
+   * WebGPU session creation can succeed while the first OrtRun fails (e.g. BERT `/bert/Expand` — invalid expand shape).
+   * Recreate the ONNX session on WASM only; model bytes are re-fetched from the same cache as `from_pretrained`.
+   */
+  private async _reinitSessionWasmOnly(): Promise<void> {
+    if (!this._reloadModelId) {
+      throw new Error('Cannot fall back to WASM: internal model id missing.');
+    }
+    await this.release();
+    const { browserExecutionProviders: _ep, ...restReload } = this._reloadOpts;
+    const optsCpu: BrowserFromPretrainedOptions = { ...restReload, runtime: 'cpu' };
+    const { modelBuffer } = await downloadModel(this._reloadModelId, optsCpu as unknown as Record<string, unknown>);
+    ort.env.wasm.numThreads = resolveBrowserWasmThreads(optsCpu);
+    ort.env.wasm.simd = optsCpu.wasmSimd !== false;
+    const { session, runtimeActual, executionProviders } = await createBrowserSession(modelBuffer, 'cpu', optsCpu);
+    this._session = session;
+    this._runtimeLabel = runtimeActual === 'gpu' ? 'gpu' : 'cpu';
+    this._providersArr = [...executionProviders];
+  }
+
+  private _usesWebGpuProvider(): boolean {
+    return executionProvidersUseWebGpu(this._providersArr);
+  }
+
   private async _runInference({ input_ids, style, styleDim, speed }: PreparedInputs): Promise<Float32Array> {
-    const seqLen = input_ids.length;
-    const inputIdsTensor = new ort.Tensor('int64', BigInt64Array.from(input_ids.map(BigInt)), [1, seqLen]);
-    const styleTensor = new ort.Tensor('float32', new Float32Array(style), [1, styleDim]);
-    const speedTensor = new ort.Tensor('float32', new Float32Array([speed]), [1]);
-    let results: Record<string, ort.Tensor>;
+    const runOnce = async (): Promise<Float32Array> => {
+      const seqLen = input_ids.length;
+      const inputIdsTensor = new ort.Tensor('int64', BigInt64Array.from(input_ids.map(BigInt)), [1, seqLen]);
+      const styleTensor = new ort.Tensor('float32', new Float32Array(style), [1, styleDim]);
+      const speedTensor = new ort.Tensor('float32', new Float32Array([speed]), [1]);
+      let results: Record<string, ort.Tensor>;
+      try {
+        results = await this._session.run({
+          input_ids: inputIdsTensor,
+          style: styleTensor,
+          speed: speedTensor,
+        });
+      } finally {
+        inputIdsTensor.dispose();
+        styleTensor.dispose();
+        speedTensor.dispose();
+      }
+      const outputKey = Object.keys(results)[0];
+      const outTensor = results[outputKey];
+      const audioData = outTensor.data as Float32Array;
+      const trimmed = audioData.slice(0, Math.max(0, audioData.length - AUDIO_TRIM));
+      const copy = new Float32Array(trimmed);
+      for (const k of Object.keys(results)) {
+        results[k].dispose();
+      }
+      return copy;
+    };
+
     try {
-      results = await this._session.run({
-        input_ids: inputIdsTensor,
-        style: styleTensor,
-        speed: speedTensor,
-      });
-    } finally {
-      inputIdsTensor.dispose();
-      styleTensor.dispose();
-      speedTensor.dispose();
+      return await runOnce();
+    } catch (e) {
+      const msg = inferErrorText(e);
+      // Reload on WASM if WebGPU is active, or if the user asked for GPU (covers EP metadata quirks
+      // and the case where session create fell back to WASM but we still want one clean WASM reinit).
+      const tryWasm =
+        !this._wasmInferenceFallbackDone &&
+        (this._usesWebGpuProvider() || this._runtimeRequested === 'gpu');
+      if (tryWasm) {
+        this._wasmInferenceFallbackDone = true;
+        console.warn('[kitten-tts] Inference failed; reloading session on WASM (CPU).', msg);
+        await this._reinitSessionWasmOnly();
+        return await runOnce();
+      }
+      throw e;
     }
-    const outputKey = Object.keys(results)[0];
-    const outTensor = results[outputKey];
-    const audioData = outTensor.data as Float32Array;
-    const trimmed = audioData.slice(0, Math.max(0, audioData.length - AUDIO_TRIM));
-    const copy = new Float32Array(trimmed);
-    for (const k of Object.keys(results)) {
-      results[k].dispose();
-    }
-    return copy;
   }
 }

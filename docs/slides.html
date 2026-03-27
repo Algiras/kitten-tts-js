@@ -265,10 +265,7 @@
     }
 
     .stage-card {
-      /* Proportional inset for context chip + math for .stage-meta clearance */
       --stage-pad: 36px;
-      --stage-ctx-chip: 22px;
-      --stage-ctx-inset: clamp(12px, 2.5vmin + 8px, 32px);
       min-height: clamp(400px, 52vh, 640px);
       border-radius: var(--radius);
       padding: var(--stage-pad);
@@ -342,7 +339,6 @@
       border-radius: 0;
       --stage-pad: clamp(28px, 4vw, 56px);
       padding: var(--stage-pad);
-      --stage-ctx-inset: clamp(14px, 3vmin + 10px, 40px);
       grid-template-rows: auto minmax(0, 1fr);
     }
 
@@ -386,9 +382,7 @@
       position: relative;
       z-index: 1;
       min-width: 0;
-      /* Clear chip: inset + chip size vs content start (matches --stage-pad) */
-      padding-left: max(10px, calc(var(--stage-ctx-inset) + var(--stage-ctx-chip) - var(--stage-pad) + 10px));
-      padding-top: max(8px, calc(var(--stage-ctx-inset) + var(--stage-ctx-chip) - var(--stage-pad) + 8px));
+      padding: 4px 0 0 2px;
     }
 
     .stage-kicker {
@@ -418,6 +412,76 @@
 
     .stage-card:fullscreen .stage-waveform {
       height: 320px;
+    }
+
+    .voice-badge {
+      position: absolute;
+      bottom: clamp(14px, 2.2vw, 22px);
+      left: clamp(14px, 2.5vw, 28px);
+      z-index: 15;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: rgba(255, 247, 239, 0.72);
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      user-select: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .voice-badge[hidden] {
+      display: none;
+    }
+
+    .voice-badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .voice-badge[data-state="ready"] .voice-badge-dot {
+      background: #5dbd6a;
+      animation: none;
+    }
+
+    .voice-badge[data-state="pending"] .voice-badge-dot {
+      background: rgba(255, 247, 239, 0.3);
+      animation: none;
+    }
+
+    .voice-badge[data-state="pending"] {
+      color: rgba(255, 247, 239, 0.4);
+    }
+
+    .voice-badge[data-state="synthesizing"] .voice-badge-dot {
+      background: #e8a040;
+      animation: badge-pulse 1.2s ease-in-out infinite;
+    }
+
+    .voice-badge[data-state="playing"] .voice-badge-dot {
+      background: #5dbd6a;
+      animation: badge-pulse 1.6s ease-in-out infinite;
+    }
+
+    .voice-badge[data-state="paused"] .voice-badge-dot {
+      background: #c0a080;
+      animation: none;
+    }
+
+    @keyframes badge-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.75); }
+    }
+
+    .stage-card:fullscreen .voice-badge {
+      bottom: clamp(18px, 2.5vw, 32px);
+      left: clamp(18px, 3vw, 40px);
+      font-size: clamp(0.72rem, 1.1vw, 0.88rem);
     }
 
     .stage-slide-ref {
@@ -1198,10 +1262,37 @@
       background: rgba(255, 248, 240, 0.6);
     }
 
+    .presenter-actions button {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.82rem;
+      flex-shrink: 0;
+    }
+
+    button.pause-btn {
+      background: rgba(255, 248, 240, 0.6);
+    }
+
+    button.stop-btn {
+      background: rgba(255, 248, 240, 0.6);
+      border-color: #c0503a;
+      color: #a8402e;
+    }
+
+    button.stop-btn:hover:not(:disabled) {
+      background: rgba(168, 64, 46, 0.10);
+      border-color: #a8402e;
+    }
+
     button:disabled {
       cursor: not-allowed;
       opacity: 0.55;
       transform: none;
+    }
+
+    .toolbar-setup.config-locked {
+      pointer-events: none;
+      opacity: 0.45;
+      filter: grayscale(0.3);
     }
 
     .toolbar {
@@ -1272,10 +1363,10 @@
       white-space: nowrap;
     }
 
-    /* Status uses remaining space; long lines ellipsize so Options + Present stay visible */
-    #assistant-status {
-      flex: 1 1 auto;
-      min-width: 0;
+    #assistant-status,
+    #presenter-status {
+      flex: 1 1 0;
+      min-width: 4rem;
       display: block;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1352,11 +1443,6 @@
       min-width: 0;
     }
 
-    .toolbar-setup-panel .llm-context-wrap {
-      max-width: 100%;
-      align-self: stretch;
-    }
-
     .status-pill.ok {
       color: var(--success);
       border-color: #b3d8c4;
@@ -1375,225 +1461,87 @@
       background: #fdf0ec;
     }
 
-    .llm-context-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.28rem;
-      padding: 0.12rem 0.38rem 0.12rem 0.22rem;
-      border-radius: 999px;
-      background: rgba(255, 250, 242, 0.55);
-      border: 1px solid rgba(216, 202, 187, 0.72);
-      max-width: min(18rem, 34vw);
-      flex: 0 1 auto;
-      min-width: 0;
-    }
-
-    .llm-context-wrap[data-level='mid'] {
-      border-color: #e6d2b3;
-      background: #fdf8f0;
-    }
-
-    .llm-context-wrap[data-level='high'] {
-      border-color: #e0b5ab;
-      background: #fdf0ec;
-    }
-
-    .llm-context-ring {
-      flex-shrink: 0;
-      width: 14px;
-      height: 14px;
-    }
-
-    .llm-context-svg {
-      display: block;
-      width: 14px;
-      height: 14px;
-    }
-
-    .llm-context-track {
-      stroke: rgba(72, 62, 54, 0.32);
-      stroke-width: 3.25;
-    }
-
-    /*
-      Default empty ring (2πr, r=14). JS sets inline stroke-dash* which overrides this after load.
-      Do not put stroke-dash on the HTML circles — SVG inline style beats setAttribute and blocked updates.
-    */
-    .llm-context-ind {
-      stroke: var(--ctx-progress);
-      stroke-width: 3.6;
-      fill: none;
-      stroke-linecap: round;
-      stroke-dasharray: 87.9645943;
-      stroke-dashoffset: 87.9645943;
-      transition: stroke-dashoffset 0.65s cubic-bezier(0.22, 0.82, 0.28, 1), stroke 0.35s ease;
-    }
-
-    .llm-context-wrap[data-level='mid'] .llm-context-ind {
-      stroke: var(--warning);
-    }
-
-    .llm-context-wrap[data-level='high'] .llm-context-ind {
-      stroke: #a3311b;
-    }
-
-    .llm-context-meter {
-      padding: 0;
-      border-radius: 0;
-      font-size: 0.62rem;
-      font-family: var(--mono);
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      min-width: 0;
-    }
-
-    .llm-context-wrap[data-level='mid'] .llm-context-meter {
-      color: var(--warning);
-    }
-
-    .llm-context-wrap[data-level='high'] .llm-context-meter {
-      color: #a3311b;
-    }
-
-    /*
-      Corner chip: same vocabulary as toolbar .llm-context-wrap (pill + ring) and stage .tool-activity (glass).
-      Absolutely positioned so it sits in the true top-left of the card, not in the kicker row.
-    */
-    .stage-ctx-ring {
-      position: absolute;
-      top: var(--stage-ctx-inset);
-      left: var(--stage-ctx-inset);
-      z-index: 5;
-      box-sizing: border-box;
-      width: 22px;
-      height: 22px;
+    .speed-row-presenter {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 0;
-      border-radius: 999px;
-      background: rgba(12, 8, 7, 0.38);
-      border: 1px solid rgba(216, 202, 187, 0.22);
-      box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
-      backdrop-filter: blur(20px) saturate(1.35);
-      -webkit-backdrop-filter: blur(20px) saturate(1.35);
-      pointer-events: auto;
-      cursor: help;
-      opacity: 0.88;
-    }
-
-    .stage-ctx-ring .llm-context-ring {
-      width: 14px;
-      height: 14px;
-    }
-
-    .stage-ctx-ring .llm-context-svg {
-      width: 14px;
-      height: 14px;
-    }
-
-    .stage-ctx-ring .llm-context-ind {
-      transition: stroke-dashoffset 0.65s cubic-bezier(0.22, 0.82, 0.28, 1), stroke 0.35s ease;
-    }
-
-    /* Match toolbar .llm-context-track / .llm-context-ind (readable on dark glass) */
-    .stage-ctx-ring .llm-context-track {
-      stroke: rgba(255, 252, 247, 0.42);
-    }
-
-    .stage-ctx-ring .llm-context-ind {
-      stroke: var(--ctx-progress-stage);
-      stroke-width: 3.6;
-    }
-
-    .stage-ctx-ring[data-level='mid'] {
-      border-color: rgba(230, 210, 179, 0.45);
-      background: rgba(40, 28, 18, 0.48);
-    }
-
-    .stage-ctx-ring[data-level='mid'] .llm-context-ind {
-      stroke: var(--warning);
-    }
-
-    .stage-ctx-ring[data-level='high'] {
-      border-color: rgba(224, 181, 171, 0.45);
-      background: rgba(48, 22, 16, 0.5);
-    }
-
-    .stage-ctx-ring[data-level='high'] .llm-context-ind {
-      stroke: #a3311b;
-    }
-
-    /* Web platform narrator strip: mic priming, wake lock, live STT, media session */
-    .narrator-web-rail {
-      display: grid;
       gap: 10px;
-      padding: 12px 14px;
+      width: 100%;
+    }
+
+    .speed-row-presenter input[type='range'] {
+      flex: 1;
+      min-width: 0;
+      accent-color: var(--accent);
+    }
+
+    .speed-val-presenter {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-width: 3.2rem;
+      text-align: right;
+    }
+
+    .runtime-note-presenter {
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .presenter-notes-card {
       border-radius: 16px;
-      background: linear-gradient(135deg, rgba(52, 124, 168, 0.08), rgba(208, 99, 47, 0.06));
-      border: 1px solid rgba(100, 89, 79, 0.2);
-      flex: 0 0 auto;
-    }
-
-    .narrator-web-badges {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
       display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
     }
 
-    .nw-badge {
-      font-size: 0.68rem;
+    .presenter-notes-card h3 {
+      margin: 0;
+      font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      font-weight: 700;
-      padding: 0.28rem 0.5rem;
-      border-radius: 999px;
-      background: rgba(255, 252, 247, 0.85);
-      border: 1px solid var(--line);
-      color: var(--muted);
+      color: var(--accent-deep);
     }
 
-    .nw-badge.nw-badge-on {
-      border-color: rgba(33, 122, 75, 0.45);
-      color: var(--success);
-      background: rgba(236, 252, 244, 0.9);
+    #slide-notes-body {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--ink);
+      white-space: pre-wrap;
+      overflow-y: auto;
+      max-height: min(42vh, 420px);
     }
 
-    .narrator-perm-line {
+    #presenter-meta-line {
       margin: 0;
       font-size: 0.78rem;
       color: var(--muted);
       line-height: 1.4;
     }
 
-    .narrator-live-line {
-      display: grid;
-      gap: 4px;
-    }
-
-    .narrator-live-state {
+    .presenter-rail-hint {
       margin: 0;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-weight: 700;
-      color: var(--accent-deep);
-    }
-
-    .narrator-live-text {
-      margin: 0;
-      font-size: 0.95rem;
+      font-size: 0.78rem;
+      color: var(--muted);
       line-height: 1.45;
-      color: var(--ink);
-      min-height: 1.45em;
-      font-style: italic;
     }
 
+    .presenter-rail-hint kbd {
+      font-family: var(--mono);
+      font-size: 0.72em;
+      padding: 0.12rem 0.28rem;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: rgba(255, 250, 242, 0.9);
+    }
 
     @media (max-width: 720px) {
       .shell {
@@ -1661,7 +1609,20 @@
       });
       window.addEventListener('unhandledrejection', function (e) {
         var r = e && e.reason;
-        show('Async error: ' + (r && r.message ? r.message : String(r)));
+        var msg = r && typeof r === 'object' && r.message ? String(r.message) : String(r || '');
+        var low = msg.toLowerCase();
+        /* Wallet extensions inject into every page; their failed connect/reject is not this app. */
+        if (
+          low.indexOf('metamask') !== -1 ||
+          low.indexOf('walletconnect') !== -1 ||
+          low.indexOf('phantom') !== -1 ||
+          low.indexOf('rabby') !== -1 ||
+          low.indexOf('coinbase wallet') !== -1 ||
+          /user rejected|rejected the request|user denied|connection request/i.test(msg)
+        ) {
+          return;
+        }
+        show('Async error: ' + (msg || '(no message)'));
       });
       setTimeout(function () {
         if (window.__kittenSlidesLabReady) return;
@@ -1671,7 +1632,7 @@
           );
         } else {
           show(
-            'Slides script did not finish loading (first load can take 1–2 minutes while bundle.js downloads). Open DevTools → Network and fix any red requests (slides-lab.js, worker.js, bundle.js, slides-ollama.js). Rebuild: npm run build:slides-lab, npm run build:slides-ollama, or npm run build:pages. Hard-refresh (⌘⇧R).',
+            'Slides script did not finish loading (first load can take a minute while slides-lab.js and worker.js load). Open DevTools → Network and fix any red requests. Rebuild: npm run build:pages. Hard-refresh (⌘⇧R).',
           );
         }
       }, 120000);
@@ -1688,199 +1649,116 @@
         <div class="toolbar">
           <div class="toolbar-group">
             <div class="slide-controls">
-              <button id="prev-slide" class="secondary">‹</button>
-              <button id="next-slide" class="secondary">›</button>
+              <button id="prev-slide" class="secondary" type="button" aria-label="Previous slide">‹</button>
+              <button id="next-slide" class="secondary" type="button" aria-label="Next slide">›</button>
             </div>
           </div>
           <div class="presenter-actions">
-            <span class="status-pill" id="assistant-status">Connecting…</span>
+            <span class="status-pill" id="presenter-status">Loading KittenTTS…</span>
+            <button id="start-btn" class="primary" type="button" disabled title="Start narrating slides">
+              ▶ Start
+            </button>
+            <button id="pause-btn" class="pause-btn" type="button" disabled>
+              ⏸ Pause
+            </button>
+            <button id="stop-btn" class="stop-btn" type="button" disabled>
+              ⏹ Stop
+            </button>
             <details class="toolbar-setup" id="toolbar-setup">
-              <summary class="toolbar-setup-toggle">Options</summary>
+              <summary class="toolbar-setup-toggle">Voice &amp; model</summary>
               <div class="toolbar-setup-panel">
-                <div class="toolbar-field" title="KittenTTS voice for copresenter playback and Read actions">
+                <div class="toolbar-field">
                   <label class="toolbar-label" for="voice-select">Voice</label>
-                  <select id="voice-select" class="toolbar-select" aria-label="Active TTS voice">
+                  <select id="voice-select" class="toolbar-select" aria-label="KittenTTS voice">
                     <option>Bella</option>
-                    <option>Jasper</option>
+                    <option selected>Jasper</option>
                     <option>Luna</option>
                     <option>Bruno</option>
-                    <option selected>Rosie</option>
+                    <option>Rosie</option>
                     <option>Hugo</option>
                     <option>Kiki</option>
                     <option>Leo</option>
                   </select>
                 </div>
-                <div class="toolbar-field" title="Ollama model for copresenter chat and tools (pull local models first)">
-                  <label class="toolbar-label" for="ollama-model-select">LLM</label>
-                  <select id="ollama-model-select" class="toolbar-select" aria-label="Ollama copresenter model">
-                    <option value="qwen3.5:2b" selected>Qwen 3.5 2B (local)</option>
-                    <option value="qwen3.5:4b">Qwen 3.5 4B (local)</option>
-                    <option value="ministral-3:8b-cloud">Ministral 8B (cloud)</option>
+                <div class="toolbar-field">
+                  <label class="toolbar-label" for="runtime-select">Runtime</label>
+                  <select id="runtime-select" class="toolbar-select" aria-label="ONNX Runtime execution">
+                    <option value="auto" selected>Auto</option>
+                    <option value="gpu">GPU (WebGPU)</option>
+                    <option value="cpu">CPU (WASM)</option>
+                  </select>
+                  <p class="runtime-note-presenter" id="runtime-note" aria-live="polite"></p>
+                </div>
+                <div class="toolbar-field">
+                  <label class="toolbar-label" for="model-select">Model</label>
+                  <select id="model-select" class="toolbar-select" aria-label="KittenTTS ONNX model">
+                    <option value="onnx-community/KittenTTS-Nano-v0.8-ONNX" selected>
+                      Nano ONNX FP32 (≈60 MB) — WebGPU + WASM
+                    </option>
+                    <option value="onnx-community/KittenTTS-Micro-v0.8-ONNX">Micro ONNX INT8 (≈45 MB) — WASM</option>
+                    <option value="onnx-community/KittenTTS-Mini-v0.8-ONNX">Mini ONNX INT8 (≈82 MB) — WASM</option>
                   </select>
                 </div>
-                <div
-                  class="llm-context-wrap"
-                  id="llm-context-wrap"
-                  title="Copresenter history vs token budget (est.). When the ring fills, summarize/prune may run and replies can change tone."
-                >
-                  <div class="llm-context-ring" aria-hidden="true">
-                    <svg class="llm-context-svg" viewBox="0 0 36 36">
-                      <circle class="llm-context-track" cx="18" cy="18" r="14" fill="none" />
-                      <circle
-                        class="llm-context-ind"
-                        id="llm-context-ind"
-                        cx="18"
-                        cy="18"
-                        r="14"
-                        fill="none"
-                        transform="rotate(-90 18 18)"
-                      />
-                    </svg>
+                <div class="toolbar-field">
+                  <label class="toolbar-label" for="speed-range">Speed</label>
+                  <div class="speed-row-presenter">
+                    <input type="range" id="speed-range" min="0.5" max="2" step="0.05" value="1" />
+                    <span class="speed-val-presenter" id="speed-val">1.00×</span>
                   </div>
-                  <span class="llm-context-meter" id="llm-context-meter">ctx —</span>
                 </div>
               </div>
             </details>
-            <button id="present-slides" class="primary">Present</button>
+            <button id="present-slides" class="secondary" type="button" disabled title="Loading KittenTTS…">
+              Present
+            </button>
           </div>
         </div>
 
-        <article class="stage-card" id="stage-card" tabindex="-1" aria-label="Slide stage. Space push-to-talk when narrator is on.">
-      <div
-        class="stage-ctx-ring"
-        id="stage-llm-context-ring"
-        aria-hidden="true"
-        title="LLM context fill (same as toolbar). Full ring → summarize/prune may run."
-      >
-        <div class="llm-context-ring" aria-hidden="true">
-          <svg class="llm-context-svg" viewBox="0 0 36 36">
-            <circle class="llm-context-track" cx="18" cy="18" r="14" fill="none" />
-            <circle
-              class="llm-context-ind"
-              id="stage-llm-context-ind"
-              cx="18"
-              cy="18"
-              r="14"
-              fill="none"
-              transform="rotate(-90 18 18)"
-            />
-          </svg>
-        </div>
-      </div>
-
-      <div class="stage-meta">
-        <div>
-          <div class="stage-kicker" id="slide-kicker"></div>
-        </div>
-      </div>
-
-      <div class="stage-main">
-        <div class="stage-copy-row">
-          <div class="stage-copy">
-            <h2 id="slide-title"></h2>
-            <p class="lede" id="slide-lede"></p>
-            <ul class="bullets" id="slide-bullets"></ul>
+        <article class="stage-card" id="stage-card" tabindex="-1" aria-label="Slide">
+          <div class="stage-meta">
+            <div>
+              <div class="stage-kicker" id="slide-kicker"></div>
+            </div>
           </div>
-          <aside class="slide-gloss" id="slide-gloss" hidden aria-label="Glossary for terms on this slide"></aside>
-          <div class="slide-diagram" id="slide-diagram" hidden></div>
-        </div>
-      </div>
 
-      <div class="stage-bottom-chrome">
-        <div class="stage-ptt-hint" id="stage-ptt-hint" hidden>
-          <span id="stage-ptt-hint-text">Press Space to talk</span>
-        </div>
-        <div class="stage-caption-bar" id="stage-caption-bar" hidden>
-          <span class="stage-caption-text" id="stage-caption-text"></span>
-        </div>
-      </div>
+          <div class="stage-main">
+            <div class="stage-copy-row">
+              <div class="stage-copy">
+                <h2 id="slide-title"></h2>
+                <p class="lede" id="slide-lede"></p>
+                <ul class="bullets" id="slide-bullets"></ul>
+              </div>
+              <aside class="slide-gloss" id="slide-gloss" hidden aria-label="Glossary for terms on this slide"></aside>
+              <div class="slide-diagram" id="slide-diagram" hidden></div>
+            </div>
+          </div>
 
-      <div class="stage-overlay" id="stage-overlay"></div>
-      <canvas class="stage-fireworks" id="stage-fireworks" aria-hidden="true"></canvas>
-
-      <div class="tool-activity" id="tool-activity" aria-hidden="true">
-        <span class="tool-activity-dot"></span>
-        <span id="tool-activity-label">working…</span>
-      </div>
-
-      <canvas class="stage-waveform" id="stage-waveform" aria-hidden="true"></canvas>
-
-      <div class="stage-slide-ref" id="stage-slide-ref" aria-hidden="true">1 / 12</div>
-
-      <!-- Invisible refs for JS state tracking -->
-      <div id="stage-orb-trigger" hidden></div>
-      <div id="stage-assistant-avatar" data-state="idle" hidden></div>
+          <div class="stage-overlay" id="stage-overlay"></div>
+          <div class="voice-badge" id="voice-badge" hidden aria-live="polite"></div>
+          <div class="stage-slide-ref" id="stage-slide-ref" aria-hidden="true">1 / 12</div>
         </article>
       </div>
 
-      <aside class="presenter-rail" id="presenter-rail" hidden aria-label="Presenter tools">
-        <div id="narrator-web-rail" class="narrator-web-rail" hidden>
-          <span id="nw-badge-gum" hidden></span>
-          <span id="nw-badge-wake" hidden></span>
-          <span id="nw-badge-media" hidden></span>
-          <span id="nw-badge-vibrate" hidden></span>
-          <p id="narrator-perm-line"></p>
-          <p id="narrator-live-state"></p>
-          <p id="narrator-live-text"></p>
+      <aside class="presenter-rail" id="presenter-rail" aria-label="Speaker notes">
+        <div class="presenter-notes-card">
+          <h3>Speaker notes</h3>
+          <p id="presenter-meta-line"></p>
+          <p id="slide-notes-body"></p>
         </div>
-        <div class="tool-commands-ref" id="tool-commands-ref" hidden>
-          <h3>Kiki (LLM) tools</h3>
-          <ul>
-            <li><code>highlight_text</code> — <code>text</code></li>
-            <li><code>emphasize_bullet</code> — <code>index</code> (1-based)</li>
-            <li><code>go_to_slide</code> — <code>slide_number</code></li>
-            <li><code>fireworks</code> — optional <code>duration_seconds</code> 1–8s. <strong>Shortcut:</strong> <kbd>Alt</kbd>+<kbd>4</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>4</kbd>.</li>
-          </ul>
-          <h3 class="tool-commands-ref-sub">Presenter only (not in the LLM tool list)</h3>
-          <ul>
-            <li>Voice &amp; model: toolbar / hidden config — Kiki cannot call <code>set_voice</code>.</li>
-            <li>Eval-loop diagram slide: <kbd>Alt</kbd>+<kbd>1</kbd> (or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>) jumps to the slide with embedded Mermaid.</li>
-          </ul>
-          <p class="tool-commands-ref-foot"><kbd>Esc</kbd>: exit <strong>presentation</strong> (fullscreen), else narrator reset (<kbd>Shift</kbd>+<kbd>Esc</kbd> turns narrator off).</p>
-        </div>
-        <div id="assistant-debug-panel" class="assistant-debug-panel" hidden>
-          <div class="assistant-debug-header">
-            <strong>Assistant debug</strong>
-            <button type="button" id="assistant-debug-clear">Clear log</button>
-          </div>
-          <div id="assistant-debug-log" class="assistant-debug-log" aria-live="polite"></div>
-          <p class="assistant-debug-hint">
-            Enable: add <code>?debug=1</code> to the URL, or
-            <code>localStorage.setItem('kittenSlidesDebug','1')</code> then reload.
-            Console: <code>kittenSlidesAssistantDebug</code>.
-          </p>
-        </div>
+        <p class="presenter-rail-hint">
+          KittenTTS reads the <strong>script</strong> for each slide. There is no LLM — only this fixed deck.
+          <strong>Start</strong> begins narration and auto-advances through all slides.
+          <strong>Pause</strong> freezes playback; <strong>Resume</strong> picks up where you left off.
+          <strong>Stop</strong> halts everything. Voice, model, and speed settings are locked while playing — change them when stopped.
+        </p>
       </aside>
     </div>
 
-    <!-- Hidden config (auto-selected, no UI) -->
-    <div id="slide-lab-hidden-config" hidden aria-hidden="true">
-      <select id="runtime-select"><option value="auto">Auto</option><option value="gpu">GPU</option><option value="cpu">CPU</option></select>
-      <select id="model-select">
-        <option value="onnx-community/KittenTTS-Nano-v0.8-ONNX">Nano ONNX</option>
-        <option value="onnx-community/KittenTTS-Micro-v0.8-ONNX">Micro ONNX</option>
-        <option value="onnx-community/KittenTTS-Mini-v0.8-ONNX">Mini ONNX</option>
-      </select>
-      <select id="speed-select"><option value="1" selected>1.00×</option></select>
-      <select id="stt-lang-select">
-        <option value="en-US">English (US)</option>
-        <option value="en-GB">English (UK)</option>
-        <option value="lt-LT">Lietuvių</option>
-      </select>
-      <input id="ollama-url" type="hidden" value="http://localhost:11434" />
-    </div>
-
-    <!-- Invisible refs needed by existing JS -->
     <span id="tts-chip" hidden></span>
-    <span id="stt-chip" hidden></span>
-    <span id="gpu-chip" hidden></span>
-    <span id="llm-chip" hidden></span>
-    <span id="lab-auto-summary" hidden></span>
-    <span id="ollama-progress" hidden></span>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-  <!-- Deck UI + STT/TTS: src/slides-lab.ts → npm run build:slides-lab → slides-lab.js. Ollama: src/slides-ollama-assistant.ts → slides-ollama.js. -->
+  <!-- Deck + KittenTTS: slides-lab.js + worker.js -->
   <!-- Root-relative: works for /slides.html, /slides rewrite, and /slides/ (assets live next to index in `docs/`). Project Pages: prefix with repo path. -->
   <script type="module" src="/slides-lab.js"></script>
 </body>

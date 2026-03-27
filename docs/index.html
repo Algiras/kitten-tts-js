@@ -770,7 +770,7 @@
             <option value="gpu">GPU (WebGPU, experimental)</option>
           </select>
           <div class="muted-note" id="runtime-note">
-            Browser support is split by model: Nano ONNX runs on WebGPU or WASM, while Micro and Mini ONNX stay on CPU/WASM.
+            Auto uses WASM for reliability. GPU (WebGPU) targets Nano only; if inference fails, KittenTTS reloads on WASM. Micro and Mini stay on WASM.
           </div>
         </div>
       </div>
