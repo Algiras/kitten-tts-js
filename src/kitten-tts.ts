@@ -16,7 +16,8 @@ import { RawAudio } from './audio.ts';
 
 const SAMPLE_RATE = 24000;
 const AUDIO_TRIM = 5000;
-const MAX_CHUNK_CHARS = 400;
+const MAX_CHUNK_CHARS = 250;
+const MAX_INPUT_IDS = 510;
 
 const DEFAULT_VOICE_ALIASES: Record<string, string> = {
   Bella: 'expr-voice-2-f',
@@ -33,6 +34,7 @@ const DEFAULT_VOICE = 'Leo';
 // Minimal ORT interfaces (works for both onnxruntime-web and onnxruntime-node)
 interface OrtTensor {
   data: Float32Array;
+  dispose(): void;
 }
 
 interface OrtInferenceSession {
@@ -46,6 +48,7 @@ interface OrtLike {
   };
   Tensor: new (type: string, data: BigInt64Array | Float32Array, dims: readonly number[]) => OrtTensor;
   env: {
+    logLevel?: string;
     wasm: {
       wasmPaths?: string;
       numThreads: number;
@@ -81,10 +84,21 @@ interface PreparedInputs {
   speed: number;
 }
 
+function isCoarseMobileUa(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent || '',
+  );
+}
+
 function resolveWebWasmThreads(opts: FromPretrainedOptions = {}): number {
-  if (Number.isInteger(opts.wasmThreads) && opts.wasmThreads! > 0) return opts.wasmThreads!;
+  if (Number.isInteger(opts.wasmThreads) && opts.wasmThreads! > 0) {
+    return isCoarseMobileUa() ? 1 : opts.wasmThreads!;
+  }
+  if (typeof crossOriginIsolated !== 'undefined' && !crossOriginIsolated) return 1;
+  if (isCoarseMobileUa()) return 1;
   if (typeof navigator !== 'undefined' && Number.isInteger(navigator.hardwareConcurrency) && navigator.hardwareConcurrency > 0) {
-    return Math.min(navigator.hardwareConcurrency, 8);
+    return Math.min(navigator.hardwareConcurrency, 4);
   }
   return 4;
 }
@@ -94,7 +108,6 @@ function resolveWebExecutionProviders(runtime = 'auto', opts: FromPretrainedOpti
     return opts.browserExecutionProviders;
   }
   if (runtime === 'gpu') return ['webgpu'];
-  if (runtime === 'cpu' || runtime === 'wasm' || runtime === 'auto') return ['wasm'];
   return ['wasm'];
 }
 
@@ -114,27 +127,23 @@ async function createWebSession(
     };
   }
 
-  if (runtime === 'gpu') {
-    try {
-      const executionProviders = ['webgpu'];
-      const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
-      return { session, runtimeActual: 'gpu', executionProviders };
-    } catch {
-      const executionProviders = ['wasm'];
-      const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
-      return { session, runtimeActual: 'cpu', executionProviders };
-    }
-  }
-
-  if (runtime === 'cpu' || runtime === 'wasm') {
+  // `auto` uses WASM only (WebGPU session create can succeed then fail at BERT Expand on OrtRun).
+  if (runtime === 'cpu' || runtime === 'wasm' || runtime === 'auto') {
     const executionProviders = ['wasm'];
     const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
     return { session, runtimeActual: 'cpu', executionProviders };
   }
 
-  const executionProviders = ['wasm'];
-  const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
-  return { session, runtimeActual: 'cpu', executionProviders };
+  // `gpu` only: WebGPU first, then WASM (CPU).
+  try {
+    const executionProviders = ['webgpu'];
+    const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
+    return { session, runtimeActual: 'gpu', executionProviders };
+  } catch {
+    const executionProviders = ['wasm'];
+    const session = await ort.InferenceSession.create(modelBuffer, { executionProviders });
+    return { session, runtimeActual: 'cpu', executionProviders };
+  }
 }
 
 export class KittenTTS {
@@ -200,6 +209,7 @@ export class KittenTTS {
       }
       ort.env.wasm.numThreads = resolveWebWasmThreads(opts);
       ort.env.wasm.simd = opts.wasmSimd !== false;
+      ort.env.logLevel = 'error';
     }
 
     const runtime = opts.runtime || 'auto';
@@ -273,11 +283,11 @@ export class KittenTTS {
   }
 
   _chunkText(text: string): string[] {
-    const sentences = text.split(/[.!?]+/);
+    const segments = text.split(/(?<=[.!?;])\s+|\n+/);
     const chunks: string[] = [];
 
-    for (const s of sentences) {
-      const sentence = s.trim();
+    for (const seg of segments) {
+      const sentence = seg.trim();
       if (!sentence) continue;
 
       if (sentence.length <= MAX_CHUNK_CHARS) {
@@ -308,7 +318,10 @@ export class KittenTTS {
     const processedText = clean ? this._preprocessor.process(chunk) : chunk;
     let phonemes = await phonemize(processedText);
     phonemes = basic_english_tokenize(phonemes).join(' ');
-    const tokenIds = this._cleaner.clean(phonemes);
+    let tokenIds = this._cleaner.clean(phonemes);
+    if (tokenIds.length > MAX_INPUT_IDS) {
+      tokenIds = [...tokenIds.slice(0, MAX_INPUT_IDS - 2), 10, 0];
+    }
 
     if (this.voiceAliases[voiceName]) {
       voiceName = this.voiceAliases[voiceName];
@@ -352,10 +365,22 @@ export class KittenTTS {
       speed: speedTensor,
     };
 
-    const results = await this._session!.run(feeds);
+    let results: Record<string, OrtTensor>;
+    try {
+      results = await this._session!.run(feeds);
+    } finally {
+      inputIdsTensor.dispose();
+      styleTensor.dispose();
+      speedTensor.dispose();
+    }
+
     const outputKey = Object.keys(results)[0];
     const audioData = results[outputKey].data;
     const trimmed = audioData.slice(0, Math.max(0, audioData.length - AUDIO_TRIM));
-    return new Float32Array(trimmed);
+    const copy = new Float32Array(trimmed);
+    for (const k of Object.keys(results)) {
+      results[k].dispose();
+    }
+    return copy;
   }
 }

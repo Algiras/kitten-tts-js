@@ -687,6 +687,7 @@
     <span class="logo">🐱</span>
     <h1>KittenTTS JS <span class="badge">Browser Demo</span></h1>
     <nav class="links">
+      <a href="./slides.html">Slides Lab</a>
       <a href="https://github.com/Algiras/kitten-tts-js" target="_blank">GitHub</a>
       <a href="https://www.npmjs.com/package/kitten-tts-js" target="_blank">npm</a>
       <a href="https://github.com/KittenML/KittenTTS" target="_blank">Original KittenTTS ↗</a>
@@ -769,7 +770,7 @@
             <option value="gpu">GPU (WebGPU, experimental)</option>
           </select>
           <div class="muted-note" id="runtime-note">
-            Browser support is split by model: Nano ONNX runs on WebGPU or WASM, while Micro and Mini ONNX stay on CPU/WASM.
+            Auto uses WASM for reliability. GPU (WebGPU) targets Nano only; if inference fails, KittenTTS reloads on WASM. Micro and Mini stay on WASM.
           </div>
         </div>
       </div>
@@ -935,6 +936,12 @@
         streamRequests.set(id, { resolve, reject, onChunk });
         worker.postMessage({ type, id, payload });
       });
+    }
+
+    function isCoarseMobileUa() {
+      return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent || '',
+      );
     }
 
     // State
@@ -1605,10 +1612,11 @@
 
       const runtime = runtimeSelect.value;
       const useWasmSettings = runtime === 'cpu';
-      const wasmThreads = useWasmSettings && wasmThreadsSelect.value !== 'auto'
+      let wasmThreads = useWasmSettings && wasmThreadsSelect.value !== 'auto'
         ? Number(wasmThreadsSelect.value)
         : undefined;
       const wasmSimd = useWasmSettings ? Boolean(wasmSimdToggle.checked) : undefined;
+      if (isCoarseMobileUa()) wasmThreads = 1;
 
       setStatus(`Loading model (${sizeStr}) with runtime ${runtime.toUpperCase()}…`, 'loading');
       generateBtn.disabled = true;

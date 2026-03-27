@@ -143,6 +143,19 @@ If port `4173` is already occupied, the command now exits with an explicit error
 
 This serves [`docs/index.html`](./docs/index.html), where you can type text, pick voice/model, and generate speech directly in the browser.
 
+The repo also includes [`docs/slides.html`](./docs/slides.html), a slides-plus-assistant lab that pairs a presentation stage with a walkie-talkie copresenter. It uses **KittenTTS** for speech output and **browser STT** for input. Under **Options → Copresenter** you can choose **Ollama (local)** — faster, small models like `qwen3.5:2b` or `llama3.2:1b` via [`slides-ollama.js`](./src/slides-ollama-assistant.ts) — or **Browser (HF)** — [Transformers.js](https://huggingface.co/docs/transformers.js) + quantized ONNX from Hugging Face (`slides-web-llm.js`, jsDelivr), no server. On `localhost`, the default backend is **Ollama**; elsewhere it defaults to **browser** (override with `?llm=ollama` or saved choice). Ollama enables native slide **tools** (highlights, `go_to_slide`, etc.). Press **Space** to talk, **Space** again to interrupt, **Esc** to exit.
+
+Build the static assets, then serve `docs/` (port **3000**, with `/slides` → `slides.html` from [`docs/serve.json`](./docs/serve.json)):
+
+```bash
+npm run build:pages
+npm run serve:docs
+```
+
+Open `http://localhost:3000/slides` or `http://localhost:3000/slides.html`. One-shot rebuild + serve: `npm run dev`.
+
+If `npm install` fails (for example behind a restrictive registry), run `npm run install:retry` (retries against [npmmirror](https://npmmirror.com/)) or `npm run install:mirror`.
+
 ### Browser (Web Worker — recommended for production)
 
 Running inference in a Worker keeps the UI thread responsive during the ~5–10 s model load and synthesis.
@@ -317,10 +330,9 @@ Kitten JS outputs:
 - [js-mini-en.wav](./review-audio/js-mini-en.wav)
 - [js-mini-lt.wav](./review-audio/js-mini-lt.wav)
 
-Kokoro vs Kitten single-sample outputs:
+Single-sample output:
 
 - [kitten-tts-leo.wav](./review-audio/kitten-tts-leo.wav)
-- [kokoro-af_heart.wav](./review-audio/kokoro-af_heart.wav)
 
 Original parity references:
 

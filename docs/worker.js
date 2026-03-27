@@ -18,8 +18,11 @@ async function handleMessage(type, payload, id) {
         if (tts && typeof tts.release === 'function') {
             await tts.release();
         }
+        // Map everything except explicit `gpu` to `cpu` so older bundles never interpret
+        // `auto` as WebGPU, and the main thread always uses the WASM code path for Auto/CPU.
+        const runtimeNorm = String(payload.runtime || 'cpu').toLowerCase() === 'gpu' ? 'gpu' : 'cpu';
         const initOpts = {
-            runtime: payload.runtime,
+            runtime: runtimeNorm,
             wasmThreads: payload.wasmThreads,
             wasmSimd: payload.wasmSimd,
         };
@@ -29,8 +32,8 @@ async function handleMessage(type, payload, id) {
             type: 'init-done',
             id,
             payload: {
-                runtimeRequested: tts?.runtimeRequested || payload.runtime || 'auto',
-                runtimeActual: tts?.runtime || payload.runtime || 'auto',
+                runtimeRequested: payload.runtime ?? 'auto',
+                runtimeActual: tts?.runtime || runtimeNorm,
                 executionProviders: tts?.executionProviders || null,
             },
         });

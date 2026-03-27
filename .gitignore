@@ -1,6 +1,10 @@
 node_modules/
+.DS_Store
+.copilot/
+
 .env
 .venv/
+.venv-tts-eval/
 .venv-bench/
 .python-bench/
 .benchmarks/
@@ -10,8 +14,13 @@ __pycache__/
 *.onnx
 *.npz
 .cache/
+tmp/
+artifacts/tts-eval/
 dist/
 docs/bundle.js
+docs/slides-ollama.js
+docs/slides-web-llm.js
+docs/slides-lab.js
 docs/*.wasm
 docs/*.mjs
 docs/*.data
