@@ -27,7 +27,7 @@ const EMPTY_SLIDE_META = {
   audienceQuestion: '' as string | null,
 };
 
-const worker = new Worker('/worker.js', { type: 'module' });
+const worker = new Worker('./worker.js', { type: 'module' });
 const pendingRequests = new Map<
   string,
   { resolve: (v: unknown) => void; reject: (e: Error) => void }
