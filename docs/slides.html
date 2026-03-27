@@ -1218,12 +1218,12 @@
     }
 
     .slide-controls button {
-      width: 36px;
-      height: 36px;
+      width: 30px;
+      height: 30px;
       padding: 0;
       display: grid;
       place-items: center;
-      font-size: 1.1rem;
+      font-size: 1rem;
       border-radius: 50%;
     }
 
@@ -1239,8 +1239,9 @@
       border: 1px solid var(--line);
       background: var(--panel-strong);
       color: var(--ink);
-      border-radius: 14px;
-      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.82rem;
       cursor: pointer;
       transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
       text-decoration: none;
@@ -1263,9 +1264,10 @@
     }
 
     .presenter-actions button {
-      padding: 0.5rem 0.75rem;
-      font-size: 0.82rem;
+      padding: 0.38rem 0.65rem;
+      font-size: 0.78rem;
       flex-shrink: 0;
+      white-space: nowrap;
     }
 
     button.pause-btn {
@@ -1299,16 +1301,15 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       flex-wrap: nowrap;
-      padding: 14px 18px;
+      padding: 8px 14px;
       background: rgba(255, 252, 247, 0.84);
       backdrop-filter: blur(16px);
       border: 1px solid rgba(216, 202, 187, 0.9);
       border-radius: 999px;
       box-shadow: var(--shadow);
       min-width: 0;
-      /* Stack above .stage-card so Options dropdown is not painted under the slide */
       position: relative;
       z-index: 30;
     }
@@ -1316,7 +1317,7 @@
     .toolbar-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       flex-shrink: 0;
     }
 
@@ -1324,7 +1325,7 @@
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: nowrap;
       flex: 1 1 auto;
       min-width: 0;
@@ -1354,9 +1355,9 @@
     }
 
     .status-pill {
-      padding: 0.4rem 0.7rem;
+      padding: 0.3rem 0.6rem;
       border-radius: 999px;
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       background: var(--panel-strong);
       border: 1px solid var(--line);
       color: var(--muted);
@@ -1366,7 +1367,7 @@
     #assistant-status,
     #presenter-status {
       flex: 1 1 0;
-      min-width: 4rem;
+      min-width: 3rem;
       display: block;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1384,11 +1385,11 @@
     .toolbar-setup > .toolbar-setup-toggle {
       list-style: none;
       margin: 0;
-      padding: 0.38rem 0.85rem;
+      padding: 0.3rem 0.65rem;
       border-radius: 999px;
       border: 1px solid var(--line);
       background: rgba(255, 248, 240, 0.75);
-      font-size: 0.76rem;
+      font-size: 0.72rem;
       font-weight: 600;
       letter-spacing: 0.04em;
       color: var(--muted);
