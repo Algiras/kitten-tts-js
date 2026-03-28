@@ -915,6 +915,7 @@ const fsChangeEvent = 'fullscreenchange' in document ? 'fullscreenchange' : 'web
 document.addEventListener(fsChangeEvent, () => {
   const el = getFullscreenElement();
   const presentingStage = el === stageCardEl;
+  stageCardEl?.classList.toggle('is-fullscreen', !!el);
   if (presentSlidesBtn instanceof HTMLButtonElement) {
     presentSlidesBtn.textContent = el ? 'Exit presentation' : 'Present';
   }
@@ -948,6 +949,31 @@ document.addEventListener('keydown', (e) => {
     navigateToSlide(currentSlideIndex + 1);
   }
 });
+
+// --- Swipe navigation for touch devices ---
+if (stageCardEl) {
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const SWIPE_THRESHOLD = 50;
+
+  stageCardEl.addEventListener('touchstart', (e) => {
+    const touch = (e as TouchEvent).touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  }, { passive: true });
+
+  stageCardEl.addEventListener('touchend', (e) => {
+    const touch = (e as TouchEvent).changedTouches[0];
+    const dx = touch.clientX - touchStartX;
+    const dy = touch.clientY - touchStartY;
+    if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) {
+      navigateToSlide(currentSlideIndex + 1);
+    } else {
+      navigateToSlide(currentSlideIndex - 1);
+    }
+  }, { passive: true });
+}
 
 if (toolbarSetupEl instanceof HTMLDetailsElement) {
   document.addEventListener('click', (e) => {

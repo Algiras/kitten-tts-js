@@ -1005,6 +1005,7 @@ var fsChangeEvent = "fullscreenchange" in document ? "fullscreenchange" : "webki
 document.addEventListener(fsChangeEvent, () => {
 	const el = getFullscreenElement();
 	const presentingStage = el === stageCardEl;
+	stageCardEl?.classList.toggle("is-fullscreen", !!el);
 	if (presentSlidesBtn instanceof HTMLButtonElement) presentSlidesBtn.textContent = el ? "Exit presentation" : "Present";
 	syncPresentButtonEnabled();
 	if (presentingStage) {
@@ -1030,6 +1031,24 @@ document.addEventListener("keydown", (e) => {
 	if (e.key === "ArrowLeft") navigateToSlide(currentSlideIndex - 1);
 	else if (e.key === "ArrowRight") navigateToSlide(currentSlideIndex + 1);
 });
+if (stageCardEl) {
+	let touchStartX = 0;
+	let touchStartY = 0;
+	const SWIPE_THRESHOLD = 50;
+	stageCardEl.addEventListener("touchstart", (e) => {
+		const touch = e.touches[0];
+		touchStartX = touch.clientX;
+		touchStartY = touch.clientY;
+	}, { passive: true });
+	stageCardEl.addEventListener("touchend", (e) => {
+		const touch = e.changedTouches[0];
+		const dx = touch.clientX - touchStartX;
+		const dy = touch.clientY - touchStartY;
+		if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+		if (dx < 0) navigateToSlide(currentSlideIndex + 1);
+		else navigateToSlide(currentSlideIndex - 1);
+	}, { passive: true });
+}
 if (toolbarSetupEl instanceof HTMLDetailsElement) document.addEventListener("click", (e) => {
 	if (!toolbarSetupEl.open) return;
 	if (!toolbarSetupEl.contains(e.target)) toolbarSetupEl.open = false;
