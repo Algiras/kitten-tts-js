@@ -343,6 +343,7 @@ function getSlideMeta(index) {
 }
 var currentSlideIndex = 0;
 var ttsLoaded = false;
+var ttsLoadFailed = false;
 var slideDiagramGen = 0;
 var mermaidConfigured = false;
 var activeNarrationAudio = null;
@@ -402,13 +403,26 @@ function getActiveSlide() {
 		audienceQuestion: meta.audienceQuestion
 	};
 }
+function isPrerecordedMode() {
+	return (runtimeSelectEl?.value ?? "auto") === "prerecorded";
+}
 function updateRuntimeUi() {
 	const runtime = runtimeSelectEl?.value ?? "auto";
-	if (runtimeNoteEl) {
+	const prerecorded = runtime === "prerecorded";
+	const voiceField = voiceSelectEl?.closest(".toolbar-field");
+	const modelField = modelSelectEl?.closest(".toolbar-field");
+	const speedField = speedRangeEl?.closest(".toolbar-field");
+	if (voiceField) voiceField.style.display = prerecorded ? "none" : "";
+	if (modelField) modelField.style.display = prerecorded ? "none" : "";
+	if (speedField) speedField.style.display = prerecorded ? "none" : "";
+	if (runtimeNoteEl) if (prerecorded) {
+		runtimeNoteEl.hidden = false;
+		runtimeNoteEl.textContent = "Uses pre-recorded audio — no model download needed.";
+	} else {
 		runtimeNoteEl.hidden = false;
 		runtimeNoteEl.textContent = "Auto and CPU use WASM (reliable). GPU (WebGPU) is experimental for Nano — if OrtRun fails, the session reloads on WASM once. Micro/Mini are WASM only.";
 	}
-	if (!modelSelectEl) return;
+	if (!modelSelectEl || prerecorded) return;
 	const gpuSelected = runtime === "gpu";
 	const nanoOption = modelSelectEl.querySelector("option[value=\"onnx-community/KittenTTS-Nano-v0.8-ONNX\"]");
 	const microOption = modelSelectEl.querySelector("option[value=\"onnx-community/KittenTTS-Micro-v0.8-ONNX\"]");
@@ -488,25 +502,19 @@ async function loadModel(modelId) {
 			wasmSimd: true
 		});
 		ttsLoaded = true;
+		ttsLoadFailed = false;
 		const actual = String(initInfo?.runtimeActual || runtime).toUpperCase();
 		const providers = Array.isArray(initInfo?.executionProviders) ? initInfo.executionProviders.join(", ") : "n/a";
 		const actualLabel = actual === "CPU" ? "CPU (WASM)" : actual === "GPU" ? "GPU (WebGPU)" : actual;
 		if (ttsChipEl) ttsChipEl.textContent = String(initInfo?.runtimeActual || initInfo?.runtimeRequested || "ready");
 		updateStatus(`Ready — ${actualLabel} · ${providers}`, "success");
 	} catch (e) {
-		const err = e instanceof Error ? e : new Error(String(e));
-		updateStatus(`Failed to load model: ${err.message}`, "error");
-		throw err;
+		ttsLoadFailed = true;
+		updateStatus(`TTS unavailable — using pre-recorded audio. ${(e instanceof Error ? e : new Error(String(e))).message}`, "warning");
 	} finally {
 		syncPresentButtonEnabled();
 		syncPlaybackUI();
 	}
-}
-async function ensureTtsReady() {
-	if (ttsLoaded) return;
-	const modelId = modelSelectEl?.value;
-	if (!modelId) throw new Error("No model selected");
-	await loadModel(modelId);
 }
 function bumpSlideSpeechEpoch() {
 	slideSpeechEpoch += 1;
@@ -539,8 +547,16 @@ function syncVoiceBadge() {
 	if (playbackState === "idle") {
 		const cached = isCurrentSlideCached();
 		voiceBadgeEl.hidden = false;
-		voiceBadgeEl.setAttribute("data-state", cached ? "ready" : "pending");
-		voiceBadgeEl.innerHTML = cached ? `<span class="voice-badge-dot"></span>Audio ready · ${voice}` : `<span class="voice-badge-dot"></span>Not generated`;
+		if (cached) {
+			voiceBadgeEl.setAttribute("data-state", "ready");
+			voiceBadgeEl.innerHTML = `<span class="voice-badge-dot"></span>Audio ready · ${ttsLoaded ? voice : "pre-recorded"}`;
+		} else if (!ttsLoaded) {
+			voiceBadgeEl.setAttribute("data-state", "pending");
+			voiceBadgeEl.innerHTML = `<span class="voice-badge-dot"></span>Pre-recorded fallback`;
+		} else {
+			voiceBadgeEl.setAttribute("data-state", "pending");
+			voiceBadgeEl.innerHTML = `<span class="voice-badge-dot"></span>Not generated`;
+		}
 		return;
 	}
 	voiceBadgeEl.hidden = false;
@@ -558,7 +574,7 @@ function syncPlaybackUI() {
 	const playing = playbackState === "playing";
 	const paused = playbackState === "paused";
 	if (startBtn instanceof HTMLButtonElement) {
-		startBtn.disabled = !ttsLoaded || synth || playing;
+		startBtn.disabled = synth || playing;
 		startBtn.textContent = paused ? "▶ Resume" : "▶ Start";
 	}
 	if (pauseBtn instanceof HTMLButtonElement) pauseBtn.disabled = !playing;
@@ -566,30 +582,47 @@ function syncPlaybackUI() {
 	if (toolbarSetupEl) toolbarSetupEl.classList.toggle("config-locked", !idle);
 	syncVoiceBadge();
 }
+async function fetchPrerecordedAudio(slideIdx) {
+	try {
+		const resp = await fetch(`./audio/slide-${slideIdx}.wav`);
+		if (!resp.ok) return null;
+		return await resp.blob();
+	} catch {
+		return null;
+	}
+}
 /**
 * Synthesize (or fetch from cache) the WAV blob for a given slide index + voice + speed.
-* Stores the result in `audioCache` so repeat visits are instant.
+* Falls back to pre-recorded audio in docs/audio/ if TTS is unavailable.
 */
 async function synthesizeSlide(slideIdx, voice, speed) {
 	const key = audioCacheKey(slideIdx, voice, speed);
 	const cached = audioCache.get(key);
 	if (cached) return cached;
-	const meta = getSlideMeta(slideIdx);
-	const result = await postToWorker("generate", {
-		text: ttsPreprocess(buildNarrationText({
-			...deck[slideIdx],
-			kicker: meta.section,
-			duration: meta.duration,
-			takeaway: meta.takeaway,
-			artifacts: meta.artifacts,
-			audienceQuestion: meta.audienceQuestion
-		})),
-		voice,
-		speed
-	});
-	const blob = createWavBlob(result.floatArr, result.sampleRate);
-	audioCache.set(key, blob);
-	return blob;
+	if (ttsLoaded) {
+		const meta = getSlideMeta(slideIdx);
+		const result = await postToWorker("generate", {
+			text: ttsPreprocess(buildNarrationText({
+				...deck[slideIdx],
+				kicker: meta.section,
+				duration: meta.duration,
+				takeaway: meta.takeaway,
+				artifacts: meta.artifacts,
+				audienceQuestion: meta.audienceQuestion
+			})),
+			voice,
+			speed
+		});
+		const blob = createWavBlob(result.floatArr, result.sampleRate);
+		audioCache.set(key, blob);
+		return blob;
+	}
+	const prerecorded = await fetchPrerecordedAudio(slideIdx);
+	if (prerecorded) {
+		audioCache.set(key, prerecorded);
+		return prerecorded;
+	}
+	throw new Error("TTS not loaded and no pre-recorded audio available.");
 }
 /** Fire-and-forget: pre-generate the next slide audio while the current one plays. */
 function prefetchNextSlide(voice, speed) {
@@ -616,9 +649,9 @@ async function speakCurrentSlide() {
 	const isCached = audioCache.has(key);
 	playbackState = "synthesizing";
 	syncPlaybackUI();
-	updateStatus(isCached ? "Loading cached audio…" : "Synthesizing speech…");
+	updateStatus(isCached ? "Loading cached audio…" : ttsLoaded ? "Synthesizing speech…" : "Loading pre-recorded audio…");
 	try {
-		await ensureTtsReady();
+		if (!ttsLoaded && !isPrerecordedMode() && !ttsLoadFailed) await loadModel(modelSelectEl?.value ?? "onnx-community/KittenTTS-Nano-v0.8-ONNX").catch(() => {});
 		if (epoch !== slideSpeechEpoch) return;
 		const blob = await synthesizeSlide(slideIdx, voice, speed);
 		if (epoch !== slideSpeechEpoch) return;
@@ -674,6 +707,8 @@ async function speakCurrentSlide() {
 	} catch (e) {
 		if (epoch !== slideSpeechEpoch) return;
 		updateStatus(`TTS error: ${(e instanceof Error ? e : new Error(String(e))).message}`, "error");
+		playbackState = "idle";
+		autoAdvanceActive = false;
 	} finally {
 		if (epoch === slideSpeechEpoch) {}
 		syncPlaybackUI();
@@ -883,22 +918,13 @@ function renderSlide() {
 }
 function syncPresentButtonEnabled() {
 	if (!(presentSlidesBtn instanceof HTMLButtonElement)) return;
-	if (document.fullscreenElement) {
-		presentSlidesBtn.disabled = false;
-		presentSlidesBtn.removeAttribute("title");
-		return;
-	}
-	if (!ttsLoaded) {
-		presentSlidesBtn.disabled = true;
-		presentSlidesBtn.title = "Wait for KittenTTS to finish loading — see status";
-		return;
-	}
 	presentSlidesBtn.disabled = false;
 	presentSlidesBtn.removeAttribute("title");
 }
 function reloadModelFromCurrentSelection() {
 	updateRuntimeUi();
 	audioCache.clear();
+	ttsLoadFailed = false;
 	const modelId = modelSelectEl?.value;
 	if (!modelId) return;
 	loadModel(modelId).catch(() => {});
@@ -914,7 +940,12 @@ modelSelectEl?.addEventListener("change", () => {
 runtimeSelectEl?.addEventListener("change", () => {
 	if (playbackState !== "idle") return;
 	updateRuntimeUi();
-	reloadModelFromCurrentSelection();
+	audioCache.clear();
+	if (isPrerecordedMode()) {
+		ttsLoaded = false;
+		updateStatus("Pre-recorded mode — no model download.", "warning");
+		syncPlaybackUI();
+	} else reloadModelFromCurrentSelection();
 });
 startBtn?.addEventListener("click", () => {
 	if (playbackState === "paused" && activeNarrationAudio) {
@@ -966,7 +997,7 @@ document.addEventListener("fullscreenchange", () => {
 		try {
 			stageCardEl?.focus({ preventScroll: true });
 		} catch {}
-		if (playbackState === "idle") {
+		if (playbackState === "idle" && ttsLoaded) {
 			autoAdvanceActive = true;
 			bumpSlideSpeechEpoch();
 			speakCurrentSlide();
@@ -985,15 +1016,23 @@ document.addEventListener("keydown", (e) => {
 	if (e.key === "ArrowLeft") navigateToSlide(currentSlideIndex - 1);
 	else if (e.key === "ArrowRight") navigateToSlide(currentSlideIndex + 1);
 });
-updateRuntimeUi();
-if (speedValEl && speedRangeEl) speedValEl.textContent = `${parseFloat(speedRangeEl.value).toFixed(2)}×`;
-if (webgpuAvailable()) {
-	if (runtimeSelectEl) runtimeSelectEl.value = "gpu";
-	if (modelSelectEl) modelSelectEl.value = "onnx-community/KittenTTS-Nano-v0.8-ONNX";
-}
-updateRuntimeUi();
-loadModel(modelSelectEl?.value ?? "onnx-community/KittenTTS-Nano-v0.8-ONNX").catch(() => {});
+if (toolbarSetupEl instanceof HTMLDetailsElement) document.addEventListener("click", (e) => {
+	if (!toolbarSetupEl.open) return;
+	if (!toolbarSetupEl.contains(e.target)) toolbarSetupEl.open = false;
+});
 renderSlide();
 syncPlaybackUI();
+updateRuntimeUi();
+if (speedValEl && speedRangeEl) speedValEl.textContent = `${parseFloat(speedRangeEl.value).toFixed(2)}×`;
+var wantsLive = new URLSearchParams(location.search).has("live");
+if (wantsLive && webgpuAvailable()) {
+	if (runtimeSelectEl) runtimeSelectEl.value = "gpu";
+	if (modelSelectEl) modelSelectEl.value = "onnx-community/KittenTTS-Nano-v0.8-ONNX";
+} else if (wantsLive) {
+	if (runtimeSelectEl) runtimeSelectEl.value = "auto";
+} else if (runtimeSelectEl) runtimeSelectEl.value = "prerecorded";
+updateRuntimeUi();
+if (isPrerecordedMode()) updateStatus("Pre-recorded mode — no model download.", "warning");
+else loadModel(modelSelectEl?.value ?? "onnx-community/KittenTTS-Nano-v0.8-ONNX").catch(() => {});
 window.__kittenSlidesLabReady = true;
 //#endregion

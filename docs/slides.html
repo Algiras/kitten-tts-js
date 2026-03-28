@@ -4,6 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function(){
+      var p = location.pathname;
+      var dir = p.endsWith('/') ? p.replace(/[^/]+\/$/, '') : p.replace(/\/[^/]*$/, '/');
+      document.write('<base href="' + dir + '">');
+    })();
+  </script>
   <title>KittenTTS — Slides</title>
   <style>
     :root {
@@ -1656,7 +1663,7 @@
           </div>
           <div class="presenter-actions">
             <span class="status-pill" id="presenter-status">Loading KittenTTS…</span>
-            <button id="start-btn" class="primary" type="button" disabled title="Start narrating slides">
+            <button id="start-btn" class="primary" type="button" title="Start narrating slides">
               ▶ Start
             </button>
             <button id="pause-btn" class="pause-btn" type="button" disabled>
@@ -1687,6 +1694,7 @@
                     <option value="auto" selected>Auto</option>
                     <option value="gpu">GPU (WebGPU)</option>
                     <option value="cpu">CPU (WASM)</option>
+                    <option value="prerecorded">Pre-recorded</option>
                   </select>
                   <p class="runtime-note-presenter" id="runtime-note" aria-live="polite"></p>
                 </div>
@@ -1709,7 +1717,7 @@
                 </div>
               </div>
             </details>
-            <button id="present-slides" class="secondary" type="button" disabled title="Loading KittenTTS…">
+            <button id="present-slides" class="secondary" type="button">
               Present
             </button>
           </div>
