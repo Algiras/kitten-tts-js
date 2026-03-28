@@ -268,8 +268,7 @@ async function loadModel(modelId: string): Promise<void> {
     updateStatus(`Ready — ${actualLabel} · ${providers}`, 'success');
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e));
-    updateStatus(`Failed to load model: ${err.message}`, 'error');
-    throw err;
+    updateStatus(`TTS unavailable — slides still work. ${err.message}`, 'warning');
   } finally {
     syncPresentButtonEnabled();
     syncPlaybackUI();
@@ -325,6 +324,10 @@ function syncVoiceBadge(): void {
   const voice = voiceSelectEl?.value ?? 'Jasper';
 
   if (playbackState === 'idle') {
+    if (!ttsLoaded) {
+      voiceBadgeEl.hidden = true;
+      return;
+    }
     const cached = isCurrentSlideCached();
     voiceBadgeEl.hidden = false;
     voiceBadgeEl.setAttribute('data-state', cached ? 'ready' : 'pending');
@@ -353,7 +356,7 @@ function syncPlaybackUI(): void {
   const paused = playbackState === 'paused';
 
   if (startBtn instanceof HTMLButtonElement) {
-    startBtn.disabled = !ttsLoaded || synth || playing;
+    startBtn.disabled = synth || playing;
     startBtn.textContent = paused ? '▶ Resume' : '▶ Start';
   }
   if (pauseBtn instanceof HTMLButtonElement) {
@@ -753,16 +756,6 @@ function renderSlide(): void {
 
 function syncPresentButtonEnabled(): void {
   if (!(presentSlidesBtn instanceof HTMLButtonElement)) return;
-  if (document.fullscreenElement) {
-    presentSlidesBtn.disabled = false;
-    presentSlidesBtn.removeAttribute('title');
-    return;
-  }
-  if (!ttsLoaded) {
-    presentSlidesBtn.disabled = true;
-    presentSlidesBtn.title = 'Wait for KittenTTS to finish loading — see status';
-    return;
-  }
   presentSlidesBtn.disabled = false;
   presentSlidesBtn.removeAttribute('title');
 }
@@ -858,7 +851,7 @@ document.addEventListener('fullscreenchange', () => {
     } catch {
       /* ignore */
     }
-    if (playbackState === 'idle') {
+    if (playbackState === 'idle' && ttsLoaded) {
       autoAdvanceActive = true;
       bumpSlideSpeechEpoch();
       void speakCurrentSlide();
@@ -883,6 +876,9 @@ document.addEventListener('keydown', (e) => {
 });
 
 // --- Boot ---
+renderSlide();
+syncPlaybackUI();
+
 updateRuntimeUi();
 if (speedValEl && speedRangeEl) {
   speedValEl.textContent = `${parseFloat(speedRangeEl.value).toFixed(2)}×`;
@@ -898,8 +894,5 @@ const initialModel = modelSelectEl?.value ?? 'onnx-community/KittenTTS-Nano-v0.8
 void loadModel(initialModel).catch(() => {
   /* surfaced in status */
 });
-
-renderSlide();
-syncPlaybackUI();
 
 window.__kittenSlidesLabReady = true;

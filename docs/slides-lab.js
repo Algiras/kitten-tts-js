@@ -494,9 +494,7 @@ async function loadModel(modelId) {
 		if (ttsChipEl) ttsChipEl.textContent = String(initInfo?.runtimeActual || initInfo?.runtimeRequested || "ready");
 		updateStatus(`Ready — ${actualLabel} · ${providers}`, "success");
 	} catch (e) {
-		const err = e instanceof Error ? e : new Error(String(e));
-		updateStatus(`Failed to load model: ${err.message}`, "error");
-		throw err;
+		updateStatus(`TTS unavailable — slides still work. ${(e instanceof Error ? e : new Error(String(e))).message}`, "warning");
 	} finally {
 		syncPresentButtonEnabled();
 		syncPlaybackUI();
@@ -537,6 +535,10 @@ function syncVoiceBadge() {
 	if (!voiceBadgeEl) return;
 	const voice = voiceSelectEl?.value ?? "Jasper";
 	if (playbackState === "idle") {
+		if (!ttsLoaded) {
+			voiceBadgeEl.hidden = true;
+			return;
+		}
 		const cached = isCurrentSlideCached();
 		voiceBadgeEl.hidden = false;
 		voiceBadgeEl.setAttribute("data-state", cached ? "ready" : "pending");
@@ -558,7 +560,7 @@ function syncPlaybackUI() {
 	const playing = playbackState === "playing";
 	const paused = playbackState === "paused";
 	if (startBtn instanceof HTMLButtonElement) {
-		startBtn.disabled = !ttsLoaded || synth || playing;
+		startBtn.disabled = synth || playing;
 		startBtn.textContent = paused ? "▶ Resume" : "▶ Start";
 	}
 	if (pauseBtn instanceof HTMLButtonElement) pauseBtn.disabled = !playing;
@@ -883,16 +885,6 @@ function renderSlide() {
 }
 function syncPresentButtonEnabled() {
 	if (!(presentSlidesBtn instanceof HTMLButtonElement)) return;
-	if (document.fullscreenElement) {
-		presentSlidesBtn.disabled = false;
-		presentSlidesBtn.removeAttribute("title");
-		return;
-	}
-	if (!ttsLoaded) {
-		presentSlidesBtn.disabled = true;
-		presentSlidesBtn.title = "Wait for KittenTTS to finish loading — see status";
-		return;
-	}
 	presentSlidesBtn.disabled = false;
 	presentSlidesBtn.removeAttribute("title");
 }
@@ -966,7 +958,7 @@ document.addEventListener("fullscreenchange", () => {
 		try {
 			stageCardEl?.focus({ preventScroll: true });
 		} catch {}
-		if (playbackState === "idle") {
+		if (playbackState === "idle" && ttsLoaded) {
 			autoAdvanceActive = true;
 			bumpSlideSpeechEpoch();
 			speakCurrentSlide();
@@ -985,6 +977,8 @@ document.addEventListener("keydown", (e) => {
 	if (e.key === "ArrowLeft") navigateToSlide(currentSlideIndex - 1);
 	else if (e.key === "ArrowRight") navigateToSlide(currentSlideIndex + 1);
 });
+renderSlide();
+syncPlaybackUI();
 updateRuntimeUi();
 if (speedValEl && speedRangeEl) speedValEl.textContent = `${parseFloat(speedRangeEl.value).toFixed(2)}×`;
 if (webgpuAvailable()) {
@@ -993,7 +987,5 @@ if (webgpuAvailable()) {
 }
 updateRuntimeUi();
 loadModel(modelSelectEl?.value ?? "onnx-community/KittenTTS-Nano-v0.8-ONNX").catch(() => {});
-renderSlide();
-syncPlaybackUI();
 window.__kittenSlidesLabReady = true;
 //#endregion
