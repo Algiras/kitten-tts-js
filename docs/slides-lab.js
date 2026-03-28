@@ -977,19 +977,33 @@ prevSlideBtn?.addEventListener("click", () => {
 nextSlideBtn?.addEventListener("click", () => {
 	navigateToSlide(currentSlideIndex + 1);
 });
+function getFullscreenElement() {
+	return document.fullscreenElement ?? document.webkitFullscreenElement ?? null;
+}
+function requestFS(el) {
+	if (el.requestFullscreen) return el.requestFullscreen();
+	if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+	return Promise.reject(/* @__PURE__ */ new Error("Fullscreen API not supported"));
+}
+function exitFS() {
+	if (document.exitFullscreen) return document.exitFullscreen();
+	if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+	return Promise.reject(/* @__PURE__ */ new Error("Fullscreen API not supported"));
+}
 presentSlidesBtn?.addEventListener("click", () => {
-	if (document.fullscreenElement) {
-		document.exitFullscreen().then(() => {
+	if (getFullscreenElement()) {
+		exitFS().then(() => {
 			if (presentSlidesBtn instanceof HTMLButtonElement) presentSlidesBtn.textContent = "Present";
 		});
 		return;
 	}
-	if (stageCardEl) stageCardEl.requestFullscreen().catch((error) => {
+	if (stageCardEl) requestFS(stageCardEl).catch((error) => {
 		updateStatus(`Fullscreen failed: ${error instanceof Error ? error.message : String(error)}`, "warning");
 	});
 });
-document.addEventListener("fullscreenchange", () => {
-	const el = document.fullscreenElement;
+var fsChangeEvent = "fullscreenchange" in document ? "fullscreenchange" : "webkitfullscreenchange";
+document.addEventListener(fsChangeEvent, () => {
+	const el = getFullscreenElement();
 	const presentingStage = el === stageCardEl;
 	if (presentSlidesBtn instanceof HTMLButtonElement) presentSlidesBtn.textContent = el ? "Exit presentation" : "Present";
 	syncPresentButtonEnabled();
