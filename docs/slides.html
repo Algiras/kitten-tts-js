@@ -1298,7 +1298,7 @@
       transform: none;
     }
 
-    .toolbar-setup.config-locked {
+    .config-locked {
       pointer-events: none;
       opacity: 0.45;
       filter: grayscale(0.3);
@@ -1384,14 +1384,7 @@
       flex-shrink: 0;
     }
 
-    .toolbar-setup {
-      position: relative;
-      flex-shrink: 0;
-    }
-
-    .toolbar-setup > .toolbar-setup-toggle {
-      list-style: none;
-      margin: 0;
+    .toolbar-setup-toggle {
       padding: 0.3rem 0.65rem;
       border-radius: 999px;
       border: 1px solid var(--line);
@@ -1404,41 +1397,82 @@
       font-family: var(--sans);
       user-select: none;
       transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+      flex-shrink: 0;
     }
 
-    .toolbar-setup > .toolbar-setup-toggle::-webkit-details-marker {
-      display: none;
-    }
-
-    .toolbar-setup[open] > .toolbar-setup-toggle {
+    .toolbar-setup-toggle[aria-expanded="true"] {
       border-color: rgba(208, 99, 47, 0.45);
       color: var(--accent-deep);
       background: rgba(247, 200, 175, 0.22);
     }
 
-    .toolbar-setup-panel {
-      position: absolute;
-      top: calc(100% + 10px);
-      right: 0;
-      z-index: 100;
-      width: min(92vw, 300px);
-      padding: 14px 16px;
-      border-radius: 18px;
+    .settings-modal {
+      border: none;
+      border-radius: 22px;
       background: var(--panel-strong);
-      border: 1px solid var(--line);
-      box-shadow: var(--shadow);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.18), 0 0 0 1px var(--line);
+      padding: 0;
+      width: min(92vw, 340px);
+      max-height: min(88vh, 560px);
+      overflow-y: auto;
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    .settings-modal::backdrop {
+      background: rgba(31, 26, 23, 0.35);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .settings-modal-body {
+      padding: 24px 22px 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 18px;
     }
 
-    .toolbar-setup-panel .toolbar-field {
+    .settings-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .settings-modal-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+
+    .settings-modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      background: rgba(255, 248, 240, 0.8);
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .settings-modal-close:hover {
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+    }
+
+    .settings-modal .toolbar-field {
       flex-direction: column;
       align-items: stretch;
-      gap: 0.35rem;
+      gap: 0.4rem;
     }
 
-    .toolbar-setup-panel .toolbar-label {
+    .settings-modal .toolbar-label {
       font-size: 0.72rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
@@ -1446,9 +1480,15 @@
       color: var(--accent-deep);
     }
 
-    .toolbar-setup-panel select.toolbar-select {
+    .settings-modal select.toolbar-select {
       width: 100%;
       min-width: 0;
+    }
+
+    @media (pointer: coarse) {
+      .settings-modal select.toolbar-select {
+        min-height: 44px;
+      }
     }
 
     .status-pill.ok {
@@ -1735,9 +1775,16 @@
             <button id="stop-btn" class="stop-btn" type="button" disabled>
               ⏹ Stop
             </button>
-            <details class="toolbar-setup" id="toolbar-setup">
-              <summary class="toolbar-setup-toggle">Voice &amp; model</summary>
-              <div class="toolbar-setup-panel">
+            <button class="toolbar-setup-toggle" id="toolbar-setup-btn" type="button"
+                    aria-expanded="false" aria-controls="settings-modal">
+              Voice &amp; model
+            </button>
+            <dialog class="settings-modal" id="settings-modal">
+              <div class="settings-modal-body" id="toolbar-setup">
+                <div class="settings-modal-header">
+                  <h3 class="settings-modal-title">Voice &amp; model</h3>
+                  <button class="settings-modal-close" id="settings-modal-close" type="button" aria-label="Close">&times;</button>
+                </div>
                 <div class="toolbar-field">
                   <label class="toolbar-label" for="voice-select">Voice</label>
                   <select id="voice-select" class="toolbar-select" aria-label="KittenTTS voice">
@@ -1779,7 +1826,7 @@
                   </div>
                 </div>
               </div>
-            </details>
+            </dialog>
             <button id="present-slides" class="secondary" type="button">
               Present
             </button>
