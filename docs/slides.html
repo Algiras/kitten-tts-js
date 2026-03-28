@@ -4,6 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function(){
+      var p = location.pathname;
+      var dir = p.endsWith('/') ? p.replace(/[^/]+\/$/, '') : p.replace(/\/[^/]*$/, '/');
+      document.write('<base href="' + dir + '">');
+    })();
+  </script>
   <title>KittenTTS — Slides</title>
   <style>
     :root {
@@ -1687,6 +1694,7 @@
                     <option value="auto" selected>Auto</option>
                     <option value="gpu">GPU (WebGPU)</option>
                     <option value="cpu">CPU (WASM)</option>
+                    <option value="prerecorded">Pre-recorded</option>
                   </select>
                   <p class="runtime-note-presenter" id="runtime-note" aria-live="polite"></p>
                 </div>
