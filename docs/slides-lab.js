@@ -500,12 +500,6 @@ async function loadModel(modelId) {
 		syncPlaybackUI();
 	}
 }
-async function ensureTtsReady() {
-	if (ttsLoaded) return;
-	const modelId = modelSelectEl?.value;
-	if (!modelId) throw new Error("No model selected");
-	await loadModel(modelId);
-}
 function bumpSlideSpeechEpoch() {
 	slideSpeechEpoch += 1;
 	stopSpeech();
@@ -535,14 +529,18 @@ function syncVoiceBadge() {
 	if (!voiceBadgeEl) return;
 	const voice = voiceSelectEl?.value ?? "Jasper";
 	if (playbackState === "idle") {
-		if (!ttsLoaded) {
-			voiceBadgeEl.hidden = true;
-			return;
-		}
 		const cached = isCurrentSlideCached();
 		voiceBadgeEl.hidden = false;
-		voiceBadgeEl.setAttribute("data-state", cached ? "ready" : "pending");
-		voiceBadgeEl.innerHTML = cached ? `<span class="voice-badge-dot"></span>Audio ready · ${voice}` : `<span class="voice-badge-dot"></span>Not generated`;
+		if (cached) {
+			voiceBadgeEl.setAttribute("data-state", "ready");
+			voiceBadgeEl.innerHTML = `<span class="voice-badge-dot"></span>Audio ready · ${ttsLoaded ? voice : "pre-recorded"}`;
+		} else if (!ttsLoaded) {
+			voiceBadgeEl.setAttribute("data-state", "pending");
+			voiceBadgeEl.innerHTML = `<span class="voice-badge-dot"></span>Pre-recorded fallback`;
+		} else {
+			voiceBadgeEl.setAttribute("data-state", "pending");
+			voiceBadgeEl.innerHTML = `<span class="voice-badge-dot"></span>Not generated`;
+		}
 		return;
 	}
 	voiceBadgeEl.hidden = false;
@@ -568,30 +566,47 @@ function syncPlaybackUI() {
 	if (toolbarSetupEl) toolbarSetupEl.classList.toggle("config-locked", !idle);
 	syncVoiceBadge();
 }
+async function fetchPrerecordedAudio(slideIdx) {
+	try {
+		const resp = await fetch(`./audio/slide-${slideIdx}.wav`);
+		if (!resp.ok) return null;
+		return await resp.blob();
+	} catch {
+		return null;
+	}
+}
 /**
 * Synthesize (or fetch from cache) the WAV blob for a given slide index + voice + speed.
-* Stores the result in `audioCache` so repeat visits are instant.
+* Falls back to pre-recorded audio in docs/audio/ if TTS is unavailable.
 */
 async function synthesizeSlide(slideIdx, voice, speed) {
 	const key = audioCacheKey(slideIdx, voice, speed);
 	const cached = audioCache.get(key);
 	if (cached) return cached;
-	const meta = getSlideMeta(slideIdx);
-	const result = await postToWorker("generate", {
-		text: ttsPreprocess(buildNarrationText({
-			...deck[slideIdx],
-			kicker: meta.section,
-			duration: meta.duration,
-			takeaway: meta.takeaway,
-			artifacts: meta.artifacts,
-			audienceQuestion: meta.audienceQuestion
-		})),
-		voice,
-		speed
-	});
-	const blob = createWavBlob(result.floatArr, result.sampleRate);
-	audioCache.set(key, blob);
-	return blob;
+	if (ttsLoaded) {
+		const meta = getSlideMeta(slideIdx);
+		const result = await postToWorker("generate", {
+			text: ttsPreprocess(buildNarrationText({
+				...deck[slideIdx],
+				kicker: meta.section,
+				duration: meta.duration,
+				takeaway: meta.takeaway,
+				artifacts: meta.artifacts,
+				audienceQuestion: meta.audienceQuestion
+			})),
+			voice,
+			speed
+		});
+		const blob = createWavBlob(result.floatArr, result.sampleRate);
+		audioCache.set(key, blob);
+		return blob;
+	}
+	const prerecorded = await fetchPrerecordedAudio(slideIdx);
+	if (prerecorded) {
+		audioCache.set(key, prerecorded);
+		return prerecorded;
+	}
+	throw new Error("TTS not loaded and no pre-recorded audio available.");
 }
 /** Fire-and-forget: pre-generate the next slide audio while the current one plays. */
 function prefetchNextSlide(voice, speed) {
@@ -618,9 +633,9 @@ async function speakCurrentSlide() {
 	const isCached = audioCache.has(key);
 	playbackState = "synthesizing";
 	syncPlaybackUI();
-	updateStatus(isCached ? "Loading cached audio…" : "Synthesizing speech…");
+	updateStatus(isCached ? "Loading cached audio…" : ttsLoaded ? "Synthesizing speech…" : "Loading pre-recorded audio…");
 	try {
-		await ensureTtsReady();
+		if (!ttsLoaded) await loadModel(modelSelectEl?.value ?? "onnx-community/KittenTTS-Nano-v0.8-ONNX").catch(() => {});
 		if (epoch !== slideSpeechEpoch) return;
 		const blob = await synthesizeSlide(slideIdx, voice, speed);
 		if (epoch !== slideSpeechEpoch) return;
