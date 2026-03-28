@@ -1567,6 +1567,12 @@
         justify-content: flex-start;
       }
 
+      .slide-controls button {
+        width: 44px;
+        height: 44px;
+        font-size: 1.3rem;
+      }
+
       .presenter-main .stage-card:not(:fullscreen) {
         max-height: min(78dvh, calc(100dvh - 9rem));
       }
@@ -1579,7 +1585,64 @@
         min-height: min(440px, calc(100dvh - 10rem));
         --stage-pad: 22px;
         padding: var(--stage-pad);
+        touch-action: pan-y;
       }
+    }
+
+    @media (pointer: coarse) {
+      .slide-controls button {
+        width: 48px;
+        height: 48px;
+        font-size: 1.4rem;
+      }
+
+      button, .toolbar-select {
+        min-height: 44px;
+      }
+    }
+
+    /* Safari / webkit fullscreen via JS class toggle */
+    .stage-card.is-fullscreen {
+      width: 100vw;
+      height: 100vh;
+      max-width: none;
+      min-height: 100vh;
+      max-height: none !important;
+      border-radius: 0;
+      --stage-pad: clamp(28px, 4vw, 56px);
+      padding: var(--stage-pad);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .stage-card.is-fullscreen .stage-main h2 {
+      max-width: 100%;
+      font-size: clamp(2.4rem, 4.5vw, 5rem);
+      line-height: 1.18;
+      letter-spacing: -0.02em;
+    }
+    .stage-card.is-fullscreen .lede,
+    .stage-card.is-fullscreen .bullets > li,
+    .stage-card.is-fullscreen .bullets .bullets-sub > li {
+      font-size: clamp(1.05rem, 1.5vw, 1.4rem);
+    }
+    .stage-card.is-fullscreen .stage-main {
+      padding-bottom: clamp(96px, 18vh, 180px);
+      overflow-y: auto;
+      max-height: none;
+    }
+    .stage-card.is-fullscreen .voice-badge {
+      bottom: clamp(18px, 2.5vw, 32px);
+      left: clamp(18px, 3vw, 40px);
+    }
+    .stage-card.is-fullscreen .stage-slide-ref {
+      bottom: clamp(18px, 2.5vw, 32px);
+      right: clamp(18px, 3vw, 40px);
+    }
+    .stage-card.is-fullscreen .stage-waveform {
+      height: 320px;
+    }
+    .stage-card.is-fullscreen .slide-diagram {
+      max-height: min(54vh, 560px);
+      padding: clamp(16px, 2.2vw, 24px) clamp(18px, 2.5vw, 28px);
     }
 
     .slides-boot-banner {
@@ -1759,6 +1822,7 @@
           <strong>Start</strong> begins narration and auto-advances through all slides.
           <strong>Pause</strong> freezes playback; <strong>Resume</strong> picks up where you left off.
           <strong>Stop</strong> halts everything. Voice, model, and speed settings are locked while playing — change them when stopped.
+          Navigate with <kbd>←</kbd> <kbd>→</kbd> arrows or <strong>swipe</strong> on touch devices.
         </p>
       </aside>
     </div>
