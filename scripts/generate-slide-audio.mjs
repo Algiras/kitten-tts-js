@@ -11,7 +11,7 @@ import { dirname, join } from 'node:path';
 import { KittenTTS } from '../src/index.node.ts';
 import { deck } from '../src/slides-deck-data.ts';
 
-const MODEL_ID = 'KittenML/kitten-tts-nano-0.8';
+const MODEL_ID = 'KittenML/kitten-tts-mini-0.8';
 const VOICE = 'Jasper';
 const SPEED = 1.0;
 
