@@ -122,6 +122,9 @@ const startBtn = document.getElementById('start-btn');
 const pauseBtn = document.getElementById('pause-btn');
 const stopBtn = document.getElementById('stop-btn');
 const toolbarSetupEl = document.getElementById('toolbar-setup');
+const settingsModal = document.getElementById('settings-modal') as HTMLDialogElement | null;
+const settingsOpenBtn = document.getElementById('toolbar-setup-btn');
+const settingsCloseBtn = document.getElementById('settings-modal-close');
 const voiceBadgeEl = document.getElementById('voice-badge');
 const slideNotesBodyEl = document.getElementById('slide-notes-body');
 const presenterMetaLineEl = document.getElementById('presenter-meta-line');
@@ -391,6 +394,9 @@ function syncPlaybackUI(): void {
 
   if (toolbarSetupEl) {
     toolbarSetupEl.classList.toggle('config-locked', !idle);
+  }
+  if (settingsOpenBtn instanceof HTMLButtonElement) {
+    settingsOpenBtn.disabled = !idle;
   }
   syncVoiceBadge();
 }
@@ -975,14 +981,23 @@ if (stageCardEl) {
   }, { passive: true });
 }
 
-if (toolbarSetupEl instanceof HTMLDetailsElement) {
-  document.addEventListener('click', (e) => {
-    if (!toolbarSetupEl.open) return;
-    if (!toolbarSetupEl.contains(e.target as Node)) {
-      toolbarSetupEl.open = false;
-    }
-  });
-}
+settingsOpenBtn?.addEventListener('click', () => {
+  if (!settingsModal) return;
+  settingsOpenBtn.setAttribute('aria-expanded', 'true');
+  settingsModal.showModal();
+});
+
+settingsCloseBtn?.addEventListener('click', () => {
+  settingsModal?.close();
+});
+
+settingsModal?.addEventListener('close', () => {
+  settingsOpenBtn?.setAttribute('aria-expanded', 'false');
+});
+
+settingsModal?.addEventListener('click', (e) => {
+  if (e.target === settingsModal) settingsModal.close();
+});
 
 // --- Boot ---
 renderSlide();

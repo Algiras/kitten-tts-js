@@ -381,6 +381,9 @@ var startBtn = document.getElementById("start-btn");
 var pauseBtn = document.getElementById("pause-btn");
 var stopBtn = document.getElementById("stop-btn");
 var toolbarSetupEl = document.getElementById("toolbar-setup");
+var settingsModal = document.getElementById("settings-modal");
+var settingsOpenBtn = document.getElementById("toolbar-setup-btn");
+var settingsCloseBtn = document.getElementById("settings-modal-close");
 var voiceBadgeEl = document.getElementById("voice-badge");
 var slideNotesBodyEl = document.getElementById("slide-notes-body");
 var presenterMetaLineEl = document.getElementById("presenter-meta-line");
@@ -580,6 +583,7 @@ function syncPlaybackUI() {
 	if (pauseBtn instanceof HTMLButtonElement) pauseBtn.disabled = !playing;
 	if (stopBtn instanceof HTMLButtonElement) stopBtn.disabled = idle;
 	if (toolbarSetupEl) toolbarSetupEl.classList.toggle("config-locked", !idle);
+	if (settingsOpenBtn instanceof HTMLButtonElement) settingsOpenBtn.disabled = !idle;
 	syncVoiceBadge();
 }
 async function fetchPrerecordedAudio(slideIdx) {
@@ -1049,9 +1053,19 @@ if (stageCardEl) {
 		else navigateToSlide(currentSlideIndex - 1);
 	}, { passive: true });
 }
-if (toolbarSetupEl instanceof HTMLDetailsElement) document.addEventListener("click", (e) => {
-	if (!toolbarSetupEl.open) return;
-	if (!toolbarSetupEl.contains(e.target)) toolbarSetupEl.open = false;
+settingsOpenBtn?.addEventListener("click", () => {
+	if (!settingsModal) return;
+	settingsOpenBtn.setAttribute("aria-expanded", "true");
+	settingsModal.showModal();
+});
+settingsCloseBtn?.addEventListener("click", () => {
+	settingsModal?.close();
+});
+settingsModal?.addEventListener("close", () => {
+	settingsOpenBtn?.setAttribute("aria-expanded", "false");
+});
+settingsModal?.addEventListener("click", (e) => {
+	if (e.target === settingsModal) settingsModal.close();
 });
 renderSlide();
 syncPlaybackUI();
